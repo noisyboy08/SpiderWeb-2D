@@ -1,0 +1,12 @@
+SPIDERWEB — PROGRESS LOG
+Format: [DATE] — [TASK] — [HOW VERIFIED]
+
+--- Known state before this loop started ---
+Title screen: working (confirmed via screenshot, matches design system).
+Mission Tracker screen: working (confirmed via screenshot — level nodes,
+lock states, path, ticker all render correctly).
+Gameplay screen: BROKEN — canvas sizing wrong, player sprite is a
+placeholder shape not a character, death freezes the game with no UI.
+These three are logged as Priority 0 in PRD.md and must be fixed first.
+
+--- Loop entries start below ---

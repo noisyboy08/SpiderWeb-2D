@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<meta name="description" content="Spiderweb — 2D Web-Swinging Action Platformer Game" />
+	<meta name="author" content="Jax Steele / Spiderweb Team" />
+	<title>Spiderweb — 2D Web-Swinging Platformer</title>
+	<link rel="shortcut icon" href="images/spider-head.png" />
+	<link rel="stylesheet" href="css/spiderman-game.css" />
+</head>
+<body>
+	<div id="game-container">
+		<canvas id="canvas" width="1280" height="720"></canvas>
+	</div>
+</body>
+<script type="text/javascript" src="spiderman-game.js"></script>
+<script type="text/javascript">
+	var game = new SpidermanGame({
+		canvas: "#canvas"
+	});
+	game.load();
+</script>
+</html>
+

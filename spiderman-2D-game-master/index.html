@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="SpiderWorld — 2D Web-Swinging Action Platformer Game by Jax Steele" />
+  <meta name="author" content="SpiderWorld Dev Team" />
+  <title>SpiderWorld — 2D Web-Swinging Platformer</title>
+  <link rel="shortcut icon" href="images/spider-head.png" />
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100vw; height: 100vh;
+      overflow: hidden;
+      background: #030810;
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+    }
+
+    /* ──────────── CANVAS ──────────── */
+    #game-container {
+      position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      background: #000;
+    }
+    #canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: #08101D;
+      image-rendering: pixelated;
+    }
+
+    /* ──────────── OVERLAY BASE ──────────── */
+    .sw-overlay {
+      position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 9000;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(3, 8, 16, 0.94);
+    }
+    .sw-panel {
+      background: linear-gradient(160deg, #0B1E35 0%, #081524 100%);
+      border: 2px solid #00C2FF;
+      border-radius: 14px;
+      box-shadow: 0 0 50px rgba(0, 194, 255, 0.35), inset 0 0 30px rgba(0, 194, 255, 0.06);
+      padding: 36px 44px;
+      min-width: 340px;
+      text-align: center;
+      color: #fff;
+    }
+
+    /* ──────────── TITLE SCREEN ──────────── */
+    #title-screen .sw-panel { min-width: 420px; }
+    .sw-logo {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 32px;
+      color: #00C2FF;
+      text-shadow: 0 0 20px rgba(0,194,255,0.8), 0 0 40px rgba(0,194,255,0.4);
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+    .sw-tagline { color: #7AA0C0; font-size: 13px; margin-bottom: 32px; }
+    .sw-btn {
+      display: block; width: 100%;
+      padding: 13px 0; margin: 8px 0;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 13px;
+      color: #0B1E35;
+      background: linear-gradient(135deg, #00C2FF, #0082C8);
+      border: none; border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      letter-spacing: 0.5px;
+    }
+    .sw-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,194,255,0.5); }
+    .sw-btn:active { transform: translateY(1px); }
+    .sw-btn.secondary {
+      background: linear-gradient(135deg, #1A3050, #0B1E35);
+      color: #00C2FF; border: 1px solid #00C2FF;
+    }
+    .sw-btn.danger { background: linear-gradient(135deg, #FF3D8A, #C42060); color: #fff; }
+
+    /* ──────────── PHOTOSENSITIVITY NOTICE ──────────── */
+    #photo-notice { z-index: 10000; }
+    #photo-notice .sw-panel { max-width: 480px; }
+    #photo-notice h2 { color: #FFD700; font-size: 18px; margin-bottom: 16px; }
+    #photo-notice p { color: #B0C4D8; line-height: 1.7; font-size: 14px; margin-bottom: 24px; }
+
+    /* ──────────── MISSION TRACKER ──────────── */
+    #mission-tracker {
+      z-index: 8000;
+      background: rgba(3, 8, 16, 0.97);
+    }
+    .tracker-container {
+      width: 94vw; height: 90vh;
+      max-width: 1140px; max-height: 680px;
+      background: linear-gradient(160deg, #0B1E35 0%, #061020 100%);
+      border: 3px solid #00C2FF;
+      border-radius: 14px;
+      box-shadow: 0 0 60px rgba(0, 194, 255, 0.4);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .tracker-topbar {
+      height: 54px; flex-shrink: 0;
+      background: #0D2540;
+      border-bottom: 2px solid #00C2FF;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px;
+    }
+    .tracker-topbar-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 15px; color: #00C2FF;
+      text-shadow: 0 0 12px rgba(0,194,255,0.6);
+    }
+    .tracker-topbar-actions { display: flex; gap: 10px; }
+    .tracker-icon-btn {
+      background: #081524; border: 1px solid #00C2FF;
+      color: #00C2FF; padding: 6px 14px;
+      border-radius: 6px; cursor: pointer;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px;
+      transition: all 0.2s;
+    }
+    .tracker-icon-btn:hover { background: #00C2FF; color: #0B1E35; }
+    .tracker-main {
+      flex: 1; position: relative;
+      background: radial-gradient(ellipse at 50% 30%, #101E35 0%, #050E1A 100%);
+      overflow: hidden;
+    }
+    /* Skyline background */
+    .tracker-main::before {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0; height: 50%;
+      background: repeating-linear-gradient(
+        90deg,
+        transparent 0, transparent 60px,
+        rgba(0, 194, 255, 0.03) 60px, rgba(0, 194, 255, 0.03) 120px
+      );
+    }
+    #nodes-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    .tracker-node {
+      position: absolute;
+      width: 58px; height: 58px;
+      border-radius: 50%;
+      background: #0D2540;
+      border: 2px solid #334466;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transform: translate(-50%, -50%);
+      transition: transform 0.2s, box-shadow 0.2s;
+      z-index: 2;
+    }
+    .tracker-node .node-label {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px; color: #7AA0C0;
+    }
+    .tracker-node.unlocked { border-color: #00C2FF; cursor: pointer; }
+    .tracker-node.unlocked:hover { transform: translate(-50%,-50%) scale(1.15); }
+    .tracker-node.completed { background: #0B3C5D; border-color: #00C2FF; box-shadow: 0 0 12px rgba(0,194,255,0.4); }
+    .tracker-node.current { border-color: #FFD700; background: #1E3A8A; box-shadow: 0 0 22px #FFD700; animation: pulse 2s ease-in-out infinite; }
+    .tracker-node.boss-node { border-color: #FF3D8A; }
+    .tracker-node.locked { opacity: 0.4; cursor: not-allowed; }
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 22px #FFD700; } 50% { box-shadow: 0 0 40px #FFD700, 0 0 60px rgba(255,215,0,0.3); } }
+
+    #level-info-popup {
+      position: absolute;
+      background: rgba(11, 30, 53, 0.97);
+      border: 2px solid #00C2FF; border-radius: 10px;
+      padding: 18px 24px; color: #fff; min-width: 240px; max-width: 280px;
+      box-shadow: 0 0 30px rgba(0,194,255,0.45);
+      display: none;
+      z-index: 10;
+      transition: opacity 0.15s ease;
+    }
+    #level-info-popup h3 { color: #00C2FF; font-size: 14px; margin-bottom: 8px; }
+    #level-info-popup .info-row { color: #8BB0CC; font-size: 12px; margin: 4px 0; }
+    #level-info-popup .btn-deploy {
+      margin-top: 14px; width: 100%; padding: 10px;
+      background: linear-gradient(135deg, #00C2FF, #0082C8);
+      border: none; border-radius: 6px; color: #0B1E35;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 12px; cursor: pointer;
+      transition: all 0.2s;
+    }
+    #level-info-popup .btn-deploy:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,194,255,0.5); }
+
+    .tracker-ticker {
+      height: 38px; flex-shrink: 0;
+      background: #050E1A;
+      border-top: 1px solid #0D2540;
+      display: flex; align-items: center;
+      overflow: hidden; color: #00C2FF; font-size: 12px;
+    }
+    .ticker-text {
+      white-space: nowrap;
+      animation: ticker-scroll 30s linear infinite;
+      padding-left: 100%;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 9px;
+      color: #5090B0;
+    }
+    @keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
+    /* ──────────── SETTINGS MODAL ──────────── */
+    #settings-modal { z-index: 10000; }
+    .settings-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 0; border-bottom: 1px solid #1A3050; color: #B0C4D8; font-size: 14px;
+    }
+    .settings-toggle {
+      width: 50px; height: 26px; border-radius: 13px;
+      background: #334466; border: none; cursor: pointer; position: relative;
+      transition: background 0.3s;
+    }
+    .settings-toggle.on { background: #00C2FF; }
+    .settings-toggle::after {
+      content: ''; position: absolute;
+      width: 20px; height: 20px; border-radius: 50%; background: #fff;
+      top: 3px; left: 3px; transition: left 0.3s;
+    }
+    .settings-toggle.on::after { left: 27px; }
+
+    /* ──────────── DEATH OVERLAY ──────────── */
+    #death-overlay { z-index: 9500; display: none; }
+    #death-overlay .sw-panel { min-width: 380px; }
+    .death-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 28px; color: #FF3D8A;
+      text-shadow: 0 0 20px rgba(255,61,138,0.7);
+      margin-bottom: 8px;
+    }
+    .death-subtitle { color: #7AA0C0; font-size: 13px; margin-bottom: 6px; }
+    .death-score { color: #FFD700; font-size: 20px; font-weight: bold; margin-bottom: 28px; }
+
+    /* ──────────── HUD ──────────── */
+    #hud {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      pointer-events: none; z-index: 7000; display: none;
+    }
+    #hp-bar-wrap {
+      position: absolute; top: 16px; left: 16px;
+      background: rgba(8, 21, 36, 0.85); border: 2px solid #00C2FF;
+      border-radius: 8px; padding: 4px 10px; min-width: 220px;
+    }
+    #hp-label { font-family: 'Press Start 2P', monospace; font-size: 8px; color: #7AA0C0; margin-bottom: 4px; }
+    #hp-bar-bg { background: #1A3050; border-radius: 4px; height: 14px; width: 200px; overflow: hidden; }
+    #hp-bar-fill { height: 100%; background: linear-gradient(90deg, #00C2FF, #0082C8); border-radius: 4px; transition: width 0.3s; }
+
+    #boss-bar-wrap {
+      position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+      background: rgba(8, 21, 36, 0.9); border: 2px solid #FF3D8A;
+      border-radius: 8px; padding: 4px 12px; min-width: 320px;
+      display: none; text-align: center;
+    }
+    #boss-name { font-family: 'Press Start 2P', monospace; font-size: 9px; color: #FF3D8A; margin-bottom: 4px; }
+    #boss-bar-bg { background: #3D0820; border-radius: 4px; height: 16px; overflow: hidden; }
+    #boss-bar-fill { height: 100%; background: linear-gradient(90deg, #FF3D8A, #C42060); border-radius: 4px; transition: width 0.3s; }
+
+    #level-progress {
+      position: absolute; top: 18px; right: 16px;
+      font-family: 'Press Start 2P', monospace; font-size: 9px; color: #7AA0C0;
+      background: rgba(8, 21, 36, 0.8); border: 1px solid #00C2FF;
+      border-radius: 6px; padding: 6px 12px;
+    }
+
+    #fs-btn {
+      position: absolute; top: 18px; right: 16px;
+      font-family: 'Press Start 2P', monospace; font-size: 9px; color: #7AA0C0;
+      background: rgba(8, 21, 36, 0.8); border: 1px solid #00C2FF;
+      border-radius: 6px; padding: 6px 10px; cursor: pointer;
+      pointer-events: all;
+      transition: all 0.2s;
+      margin-top: 36px;
+    }
+    #fs-btn:hover { color: #00C2FF; box-shadow: 0 0 10px rgba(0,194,255,0.5); }
+
+    /* ──────────── BETWEEN-LEVEL NEWS CARD ──────────── */
+    #news-card { z-index: 9800; display: none; }
+    .news-card-inner {
+      background: #0B1E35; border: 3px solid #FFD700;
+      border-radius: 10px; padding: 28px 36px; max-width: 500px; text-align: center;
+    }
+    .news-label { font-family: 'Press Start 2P', monospace; font-size: 9px; color: #FFD700; margin-bottom: 14px; letter-spacing: 2px; }
+    .news-headline { color: #fff; font-size: 15px; line-height: 1.7; margin-bottom: 20px; }
+
+    /* ──────────── SPIDERGIRL UNLOCK ──────────── */
+    #unlock-screen { z-index: 9900; display: none; }
+    .unlock-panel {
+      background: linear-gradient(160deg, #1A0A2E, #0B0518);
+      border: 3px solid #FF3D8A;
+      border-radius: 14px; padding: 40px; text-align: center; max-width: 500px;
+      box-shadow: 0 0 60px rgba(255,61,138,0.4);
+    }
+    .unlock-title {
+      font-family: 'Press Start 2P', monospace; font-size: 20px;
+      color: #FF3D8A; text-shadow: 0 0 20px rgba(255,61,138,0.7);
+      margin-bottom: 8px;
+    }
+    .unlock-subtitle { color: #D0A0C0; font-size: 14px; margin-bottom: 28px; }
+
+    /* ──────────── PORTRAIT LOCK ──────────── */
+    #portrait-lock {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: #030810; z-index: 99999;
+      display: none; align-items: center; justify-content: center; text-align: center;
+    }
+    @media (orientation: portrait) and (max-width: 900px) {
+      #portrait-lock { display: flex; }
+    }
+    .rotate-icon { font-size: 72px; animation: rotate-phone 2s ease-in-out infinite; margin-bottom: 16px; }
+    @keyframes rotate-phone { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } }
+    .rotate-text { font-family: 'Press Start 2P', monospace; color: #00C2FF; font-size: 13px; line-height: 1.8; }
+
+    /* ──────────── PAUSE MENU ──────────── */
+    .spiderman-game-menu-container {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 9200;
+      background: rgba(11, 30, 53, 0.95);
+      border: 2px solid #00C2FF;
+      border-radius: 12px;
+      padding: 28px 36px; min-width: 300px;
+      box-shadow: 0 0 40px rgba(0,194,255,0.4);
+      backdrop-filter: blur(10px);
+      text-align: center;
+    }
+    .spiderman-game-menu-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 16px; color: #00C2FF;
+      text-shadow: 0 0 10px rgba(0,194,255,0.6);
+      margin-bottom: 16px; line-height: 1.5;
+    }
+    .spiderman-game-score { color: #FFD700; font-weight: bold; }
+    .spiderman-game-menu-button {
+      display: block; width: 100%;
+      padding: 11px 0; margin: 8px 0;
+      font-family: 'Press Start 2P', monospace; font-size: 11px;
+      color: #fff;
+      background: linear-gradient(135deg, #1A3050, #0B1E35);
+      border: 1px solid #00C2FF; border-radius: 6px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .spiderman-game-menu-button:hover {
+      background: linear-gradient(135deg, #00C2FF, #0082C8);
+      color: #0B1E35; box-shadow: 0 0 15px rgba(0,194,255,0.8);
+      transform: translateY(-2px);
+    }
+    .spiderman-game-menu-button:active { transform: translateY(1px); }
+  </style>
+</head>
+<body>
+
+  <!-- ──── PORTRAIT LOCK ──── -->
+  <div id="portrait-lock">
+    <div>
+      <div class="rotate-icon">📱</div>
+      <div class="rotate-text">Rotate your device<br>to landscape mode<br>to play SpiderWorld</div>
+    </div>
+  </div>
+
+  <!-- ──── PHOTOSENSITIVITY NOTICE (shown once) ──── -->
+  <div id="photo-notice" class="sw-overlay" style="display:none;">
+    <div class="sw-panel" id="photo-panel">
+      <h2>⚠️ Photosensitivity Notice</h2>
+      <p>
+        <strong>SpiderWorld</strong> contains flashing lights and strobing visual effects, particularly in Levels 5, 7, and 11, and during all boss encounters.<br><br>
+        If you or someone nearby has photosensitive epilepsy or a similar condition, please enable <strong>Reduce Flash</strong> in Settings before playing.
+      </p>
+      <button class="sw-btn" id="btn-photo-ok">I UNDERSTAND — CONTINUE</button>
+    </div>
+  </div>
+
+  <!-- ──── TITLE SCREEN ──── -->
+  <div id="title-screen" class="sw-overlay" style="display:none;">
+    <div class="sw-panel">
+      <div class="sw-logo">SPIDER<br>WORLD</div>
+      <div class="sw-tagline">Web-Swinging Action Platformer · Jax Steele Returns</div>
+      <button class="sw-btn" id="btn-start">▶ START GAME</button>
+      <button class="sw-btn secondary" id="btn-settings-title">⚙ SETTINGS</button>
+    </div>
+  </div>
+
+  <!-- ──── MISSION TRACKER ──── -->
+  <div id="mission-tracker" class="sw-overlay" style="display:none;">
+    <div class="tracker-container">
+      <div class="tracker-topbar">
+        <div class="tracker-topbar-title">SPIDERWORLD: MISSION TRACKER</div>
+        <div class="tracker-topbar-actions">
+          <button class="tracker-icon-btn" id="btn-char-toggle">JAX STEELE</button>
+          <button class="tracker-icon-btn" id="btn-cheat-tracker">🔑 CHEAT CODE</button>
+          <button class="tracker-icon-btn" id="btn-tracker-settings">⚙</button>
+        </div>
+      </div>
+      <div class="tracker-main">
+        <svg id="web-svg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;" overflow="visible">
+          <g id="web-lines"></g>
+        </svg>
+        <div id="nodes-container"></div>
+        <div id="level-info-popup">
+          <h3 id="info-name">Level 1</h3>
+          <div class="info-row" id="info-best">Best Time: --</div>
+          <div class="info-row" id="info-flawless">Flawless: ❌</div>
+          <button class="btn-deploy" id="btn-deploy">🚀 DEPLOY</button>
+        </div>
+      </div>
+      <div class="tracker-ticker">
+        <div class="ticker-text">
+          Rooftop chaos reported downtown — witnesses describe a masked figure in navy and teal. &nbsp;•&nbsp;
+          Security firm denies any connection to last night's rooftop incident. &nbsp;•&nbsp;
+          Who is he? City records show no match for the vigilante's description. &nbsp;•&nbsp;
+          Sightings increase across the skyline — some are calling him "Spider." &nbsp;•&nbsp;
+          The city forgets no one. But one man remembers the night they needed him. &nbsp;•&nbsp;
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ──── BETWEEN-LEVEL NEWS CARD ──── -->
+  <div id="news-card" class="sw-overlay" style="display:none;">
+    <div class="news-card-inner">
+      <div class="news-label">📡 BREAKING NEWS</div>
+      <div class="news-headline" id="news-text">Loading…</div>
+      <button class="sw-btn" id="btn-news-continue">CONTINUE ▶</button>
+    </div>
+  </div>
+
+  <!-- ──── SPIDERGIRL UNLOCK ──── -->
+  <div id="unlock-screen" class="sw-overlay" style="display:none;">
+    <div class="unlock-panel">
+      <div class="unlock-title">🕸 SPIDERGIRL UNLOCKED</div>
+      <div class="unlock-subtitle">She was waiting all along. Now she fights beside you.</div>
+      <canvas id="spidergirl-sprite-canvas" width="120" height="160" style="margin:20px auto;display:block;"></canvas>
+      <button class="sw-btn danger" id="btn-unlock-ok">BACK TO MISSION TRACKER</button>
+    </div>
+  </div>
+
+  <!-- ──── SETTINGS MODAL ──── -->
+  <div id="settings-modal" class="sw-overlay" style="display:none;">
+    <div class="sw-panel" style="min-width:400px; text-align:left;">
+      <h2 style="font-family:'Press Start 2P',monospace;font-size:16px;color:#00C2FF;margin-bottom:24px;text-align:center;">⚙ SETTINGS</h2>
+      <div class="settings-row">
+        <span>Reduce Flash (Levels 5, 7, 11)</span>
+        <button class="settings-toggle" id="toggle-flash" data-key="reduceFlash"></button>
+      </div>
+      <div class="settings-row">
+        <span>Reduce Screen Shake</span>
+        <button class="settings-toggle" id="toggle-shake" data-key="reduceShake"></button>
+      </div>
+      <div class="settings-row">
+        <span>Sound Effects</span>
+        <button class="settings-toggle" id="toggle-sfx" data-key="soundEffects"></button>
+      </div>
+      <div class="settings-row">
+        <span>Music</span>
+        <button class="settings-toggle" id="toggle-music" data-key="music"></button>
+      </div>
+      <button class="sw-btn" id="btn-settings-close" style="margin-top:24px;">CLOSE</button>
+    </div>
+  </div>
+
+  <!-- ──── CHEAT CODE MODAL ──── -->
+  <div id="cheat-modal" class="sw-overlay" style="display:none; z-index:10000;">
+    <div class="sw-panel" style="min-width:400px; text-align:center;">
+      <h2 style="font-family:'Press Start 2P',monospace;font-size:16px;color:#FFD700;margin-bottom:12px;">🔑 SECRET CHEAT CODE</h2>
+      <p style="color:#B0C4D8;font-size:12px;margin-bottom:24px;line-height:1.5;">
+        Enter a secret level code to unlock & skip directly to that level.
+      </p>
+      
+      <input type="text" id="cheat-input" placeholder="ENTER SECRET CODE..." style="
+        width: 100%; padding: 14px; font-family: 'Press Start 2P', monospace;
+        font-size: 13px; text-align: center; text-transform: uppercase;
+        background: #061020; color: #00C2FF; border: 2px solid #00C2FF;
+        border-radius: 8px; margin-bottom: 12px; outline: none;
+        box-shadow: 0 0 15px rgba(0,194,255,0.3);
+      " />
+      
+      <div id="cheat-msg" style="font-family:'Press Start 2P',monospace;font-size:10px;min-height:18px;margin-bottom:20px;color:#FF3D8A;"></div>
+
+      <button class="sw-btn" id="btn-cheat-submit">ACTIVATE CHEAT ▶</button>
+      <button class="sw-btn secondary" id="btn-cheat-close" style="margin-top:10px;">CANCEL</button>
+    </div>
+  </div>
+
+  <!-- ──── DEATH OVERLAY ──── -->
+  <div id="death-overlay" class="sw-overlay" style="display:none;">
+    <div class="sw-panel">
+      <div class="death-title">GAME OVER</div>
+      <div class="death-subtitle">Jax Steele falls... but the city still needs him.</div>
+      <div class="death-score">SCORE: <span id="death-score-val">0</span></div>
+      <button class="sw-btn" id="btn-retry">🔄 RETRY</button>
+      <button class="sw-btn secondary" id="btn-tracker-from-death">📡 MISSION TRACKER</button>
+      <button class="sw-btn secondary" id="btn-cheat-from-death">🔑 CHEAT CODE</button>
+      <button class="sw-btn secondary" id="btn-settings-from-death">⚙ SETTINGS</button>
+    </div>
+  </div>
+
+  <!-- ──── IN-LEVEL HUD ──── -->
+  <div id="hud">
+    <div id="hp-bar-wrap">
+      <div id="hp-label">SPIDERWORLD — JAX STEELE</div>
+      <div id="hp-bar-bg"><div id="hp-bar-fill" style="width:100%;"></div></div>
+    </div>
+    <div id="boss-bar-wrap">
+      <div id="boss-name">BOSS</div>
+      <div id="boss-bar-bg"><div id="boss-bar-fill" style="width:100%;"></div></div>
+    </div>
+    <div id="level-progress">DIST: 0m</div>
+    <button id="fs-btn" title="Toggle Fullscreen (F)">⛶ FS</button>
+  </div>
+
+  <!-- ──── CANVAS ──── -->
+  <div id="game-container">
+    <canvas id="canvas" width="1280" height="720"></canvas>
+  </div>
+
+  <!-- ──── ORIGINAL GAME ENGINE ──── -->
+  <script src="spiderman-game.js"></script>
+
+  <!-- ──── SPIDERWORLD MAIN CONTROLLER ──── -->
+  <script>
+  (function() {
+    'use strict';
+
+    // ── CONSTANTS ──────────────────────────────────
+    const GAME_NAME = 'SpiderWorld';
+    const SAVE_KEY  = 'SPIDERWORLD_SAVE_V1';
+
+    const NEWS_CARDS = [
+      "Rooftop chaos reported downtown — witnesses describe a masked figure in navy and teal.",
+      "Security firm denies any connection to last night's rooftop incident.",
+      "Who is he? City records show no match for the vigilante's description.",
+      "Sightings increase across the skyline — some are calling him 'Spider.'",
+      "Mercenary crews spotted claiming rooftop territory. No comment from city officials.",
+      "Corporate drones tagged a civilian as hostile. An unknown figure intervened.",
+      "The Enforcer — Stinger's top lieutenant — was last seen on the upper east side.",
+      "Night falls. The rooftops belong to someone now. The city holds its breath.",
+      "Surveillance footage shows an unknown figure defeating a sniper merc. Elite level threat.",
+      "Thread — a rival web-user — has been spotted moving at high speed across the skyline.",
+      "A storm is coming. The city braces for impact. He's still out there.",
+      "STINGER CONTAINED. Mystery vigilante confirmed responsible. City calls him: Spider."
+    ];
+
+    const LEVEL_DATA = [
+      { id:1,  name:"No Warm-Up",              boss:false },
+      { id:2,  name:"Wind Corridor",            boss:false },
+      { id:3,  name:"Turf War",                 boss:false },
+      { id:4,  name:"Crossfire",                boss:false },
+      { id:5,  name:"Construction Chaos",       boss:false },
+      { id:6,  name:"The Enforcer",             boss:true,  bossName:"The Enforcer" },
+      { id:7,  name:"Night Ops",                boss:false },
+      { id:8,  name:"Static in the Signal",     boss:false },
+      { id:9,  name:"Rooftop Siege",            boss:false },
+      { id:10, name:"Thread",                   boss:true,  bossName:"Thread" },
+      { id:11, name:"The Approach",             boss:false },
+      { id:12, name:"Stinger Showdown",         boss:true,  bossName:"Stinger" }
+    ];
+
+    // ── SAVE / SETTINGS ────────────────────────────
+    function loadSave() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch(e) {}
+      return {
+        version: 1, unlockedLevel: 1, spiderGirlUnlocked: false, selectedChar: 'jax',
+        firstPlay: true, photoDismissed: false,
+        levels: {},
+        settings: { reduceFlash:false, reduceShake:false, soundEffects:true, music:true }
+      };
+    }
+    function writeSave(d) {
+      try { localStorage.setItem(SAVE_KEY, JSON.stringify(d)); } catch(e) {}
+    }
+
+    let SAVE = loadSave();
+
+    function saveLevelComplete(id, ms, flawless) {
+      if (!SAVE.levels[id]) SAVE.levels[id] = {};
+      SAVE.levels[id].completed = true;
+      if (!SAVE.levels[id].bestMs || ms < SAVE.levels[id].bestMs) SAVE.levels[id].bestMs = ms;
+      if (flawless) SAVE.levels[id].flawless = true;
+      if (id >= SAVE.unlockedLevel) SAVE.unlockedLevel = Math.min(12, id + 1);
+      if (id === 12) SAVE.spiderGirlUnlocked = true;
+      writeSave(SAVE);
+    }
+
+    // ── STATE ──────────────────────────────────────
+    let activeScreen = null;
+    let selectedLevelId = 1;
+    let game = null;
+    let levelStartMs = 0;
+    let playerTookDamage = false;
+    let settingsCaller = null;
+
+    function el(id) { return document.getElementById(id); }
+    function show(id) { const e = el(id); if (e) e.style.display = 'flex'; }
+    function hide(id) { const e = el(id); if (e) e.style.display = 'none'; }
+
+    // ── SETTINGS ───────────────────────────────────
+    function applySettingsToggles() {
+      ['flash','shake','sfx','music'].forEach(k => {
+        const map = { flash:'reduceFlash', shake:'reduceShake', sfx:'soundEffects', music:'music' };
+        const btn = el('toggle-' + k);
+        if (btn) {
+          btn.classList.toggle('on', !!SAVE.settings[map[k]]);
+        }
+      });
+    }
+
+    function openSettings(caller) {
+      settingsCaller = caller;
+      applySettingsToggles();
+      show('settings-modal');
+    }
+
+    document.querySelectorAll('.settings-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.key;
+        SAVE.settings[key] = !SAVE.settings[key];
+        btn.classList.toggle('on', SAVE.settings[key]);
+        writeSave(SAVE);
+        // Apply to game if running
+        if (game) {
+          if (key === 'soundEffects') game.soundEffects = SAVE.settings[key];
+          if (key === 'music') { if (SAVE.settings.music) game.unmute(); else game.mute(); }
+        }
+      });
+    });
+
+    el('btn-settings-close').addEventListener('click', () => {
+      hide('settings-modal');
+      if (settingsCaller) { show(settingsCaller); settingsCaller = null; }
+    });
+
+    // ── PHOTO NOTICE ───────────────────────────────
+    el('btn-photo-ok').addEventListener('click', () => {
+      SAVE.photoDismissed = true;
+      writeSave(SAVE);
+      hide('photo-notice');
+      showTitle();
+    });
+
+    // ── TITLE SCREEN ───────────────────────────────
+    function showTitle() {
+      hide('mission-tracker'); hide('death-overlay'); hide('news-card');
+      show('title-screen');
+    }
+
+    el('btn-start').addEventListener('click', () => {
+      hide('title-screen');
+      showMissionTracker();
+    });
+
+    el('btn-settings-title').addEventListener('click', () => {
+      hide('title-screen');
+      openSettings('title-screen');
+    });
+
+    // ── MISSION TRACKER ─────────────────────────────
+    function showMissionTracker() {
+      hide('death-overlay');
+      hide('news-card');
+      hide('unlock-screen');
+      hide('cheat-modal');
+      hide('settings-modal');
+      hide('title-screen');
+
+      window.__swOverlayActive = true;
+      if (game) {
+        game.gameIsOver = false;
+        game.paused = true;
+        if (game.gameoverMenu) game.gameoverMenu.style.display = 'none';
+        if (game.pauseMenu) game.pauseMenu.style.display = 'none';
+      }
+
+      el('hud').style.display = 'none';
+      buildTrackerNodes();
+      updateCharBtn();
+      show('mission-tracker');
+    }
+
+    function updateCharBtn() {
+      const btn = el('btn-char-toggle');
+      if (SAVE.selectedChar === 'spidergirl') {
+        btn.textContent = 'SPIDERGIRL';
+        btn.style.color = '#FF3D8A';
+        btn.style.borderColor = '#FF3D8A';
+      } else {
+        btn.textContent = 'JAX STEELE';
+        btn.style.color = '#00C2FF';
+        btn.style.borderColor = '#00C2FF';
+      }
+    }
+
+    el('btn-char-toggle').addEventListener('click', () => {
+      if (!SAVE.spiderGirlUnlocked) { alert('SpiderGirl unlocks after defeating Stinger in Level 12!'); return; }
+      SAVE.selectedChar = SAVE.selectedChar === 'spidergirl' ? 'jax' : 'spidergirl';
+      writeSave(SAVE);
+      updateCharBtn();
+    });
+
+    el('btn-tracker-settings').addEventListener('click', () => {
+      hide('mission-tracker');
+      openSettings('mission-tracker');
+    });
+
+    // Level node positions (4×3 grid with spacing)
+    const NODE_POSITIONS = [
+      [12, 22], [29, 22], [46, 22], [63, 22],
+      [20, 52], [37, 52], [54, 52], [71, 52],
+      [12, 80], [35, 80], [57, 80], [80, 80]
+    ];
+
+    function buildTrackerNodes() {
+      const container = el('nodes-container');
+      const svgLines  = el('web-lines');
+      container.innerHTML = '';
+      svgLines.innerHTML  = '';
+
+      const containerEl = document.querySelector('.tracker-main');
+      const cW = containerEl.offsetWidth;
+      const cH = containerEl.offsetHeight;
+
+      const points = [];
+      LEVEL_DATA.forEach((lvl, i) => {
+        const [px, py] = NODE_POSITIONS[i];
+        const x = (px / 100) * cW;
+        const y = (py / 100) * cH;
+        points.push({ x, y });
+
+        const unlocked  = lvl.id <= (SAVE.unlockedLevel || 1);
+        const completed = SAVE.levels[lvl.id]?.completed;
+        const isCurrent = lvl.id === (SAVE.unlockedLevel || 1);
+
+        const node = document.createElement('div');
+        node.className = 'tracker-node' +
+          (completed ? ' completed' : '') +
+          (isCurrent && !completed ? ' current' : '') +
+          (!unlocked ? ' locked' : ' unlocked') +
+          (lvl.boss ? ' boss-node' : '');
+        node.style.left = px + '%';
+        node.style.top  = py + '%';
+
+        let icon = lvl.id;
+        if (!unlocked)   icon = '🔒';
+        else if (lvl.id === 6)  icon = '⚔️';
+        else if (lvl.id === 10) icon = '🕸️';
+        else if (lvl.id === 12) icon = '🦂';
+        else if (completed)     icon = '✓';
+
+        node.innerHTML = `<span class="node-label">${icon}</span>`;
+        node.title = `Level ${lvl.id}: ${lvl.name}${!unlocked ? ' (Locked)' : ''}`;
+
+        if (unlocked) {
+          node.addEventListener('click', (e) => {
+            selectedLevelId = lvl.id;
+            showLevelPopup(lvl, node);
+            e.stopPropagation();
+          });
+        }
+        container.appendChild(node);
+      });
+
+      // Draw connecting web lines between nodes
+      for (let i = 0; i < points.length - 1; i++) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', points[i].x);
+        line.setAttribute('y1', points[i].y);
+        line.setAttribute('x2', points[i+1].x);
+        line.setAttribute('y2', points[i+1].y);
+        line.setAttribute('stroke', SAVE.levels[i+1]?.completed ? '#00C2FF' : '#1A3050');
+        line.setAttribute('stroke-width', '2');
+        line.setAttribute('stroke-dasharray', '6,4');
+        svgLines.appendChild(line);
+      }
+    }
+
+    function showLevelPopup(lvl, nodeEl) {
+      const popup = el('level-info-popup');
+      el('info-name').textContent = `Level ${lvl.id}: ${lvl.name}`;
+      const rec = SAVE.levels[lvl.id] || {};
+      el('info-best').textContent = rec.bestMs ? `Best Time: ${(rec.bestMs/1000).toFixed(1)}s` : 'Best Time: --';
+      el('info-flawless').textContent = rec.flawless ? '🏆 Flawless: YES' : 'Flawless: ❌';
+
+      // Position popup near the node
+      popup.style.display = 'block';
+      const container = document.querySelector('.tracker-main');
+      const cRect    = container.getBoundingClientRect();
+      const nRect    = nodeEl.getBoundingClientRect();
+      const popW     = popup.offsetWidth  || 260;
+      const popH     = popup.offsetHeight || 160;
+      const nodeRelX = nRect.left - cRect.left + nRect.width / 2;  // centre of node inside container
+      const nodeRelY = nRect.top  - cRect.top  + nRect.height / 2;
+
+      // Try: right of node, else left, clamp to container
+      let left = nodeRelX + nRect.width / 2 + 12;
+      if (left + popW > cRect.width - 8) left = nodeRelX - nRect.width / 2 - popW - 12;
+      if (left < 8) left = 8;
+
+      let top = nodeRelY - popH / 2;
+      if (top + popH > cRect.height - 8) top = cRect.height - popH - 8;
+      if (top < 8) top = 8;
+
+      popup.style.left = left + 'px';
+      popup.style.top  = top  + 'px';
+      popup.style.bottom = 'auto';
+      popup.style.right  = 'auto';
+    }
+
+    // Close popup when clicking outside
+    document.querySelector('.tracker-main').addEventListener('click', () => {
+      el('level-info-popup').style.display = 'none';
+    });
+
+    el('btn-deploy').addEventListener('click', () => {
+      hide('mission-tracker');
+      el('level-info-popup').style.display = 'none';
+      startLevel(selectedLevelId);
+    });
+
+    // ── START LEVEL ─────────────────────────────────
+    function startLevel(id) {
+      selectedLevelId = id;
+      window.__swOverlayActive = false;
+      const lvl = LEVEL_DATA.find(l => l.id === id);
+      levelStartMs = Date.now();
+      playerTookDamage = false;
+
+      // Speed scaling per level (Level 1: 1.0x -> Level 12: 1.88x)
+      const speedMult = 1.0 + (id - 1) * 0.08;
+
+      // Init game if not already
+      if (!game) {
+        game = new SpidermanGame({ canvas: '#canvas' });
+        game.speedMultiplier = speedMult;
+        game.load();
+        window.game = game;
+        patchGameCallbacks();
+      } else {
+        game.speedMultiplier = speedMult;
+        game.restart();
+      }
+
+      // Apply settings to game
+      game.soundEffects = SAVE.settings.soundEffects;
+      if (!SAVE.settings.music) game.mute(); else game.unmute();
+
+      // Update HUD labels
+      const isSpiderGirl = SAVE.selectedChar === 'spidergirl';
+      el('hp-label').textContent = isSpiderGirl ? `SPIDERWORLD — SPIDERGIRL (LVL ${id})` : `SPIDERWORLD — JAX STEELE (LVL ${id})`;
+      el('hp-bar-fill').style.background = isSpiderGirl
+        ? 'linear-gradient(90deg,#FF3D8A,#C42060)'
+        : 'linear-gradient(90deg,#00C2FF,#0082C8)';
+
+      // Boss bar
+      if (lvl && lvl.boss) {
+        el('boss-name').textContent = lvl.bossName.toUpperCase();
+        el('boss-bar-wrap').style.display = 'block';
+        updateBossBar(100, 100);
+      } else {
+        el('boss-bar-wrap').style.display = 'none';
+      }
+
+      el('hud').style.display = 'block';
+      updateHpBar(100, 100);
+      el('level-progress').textContent = 'DIST: 0m';
+    }
+
+    function patchGameCallbacks() {
+      // Suppress the built-in gameover/pause menus when SpiderWorld overlay is active
+      const origShowGameoverMenu = game.showGameoverMenu.bind(game);
+      game.showGameoverMenu = function() {
+        if (window.__swOverlayActive) {
+          if (game.gameoverMenu) game.gameoverMenu.style.display = 'none';
+          return;
+        }
+        origShowGameoverMenu();
+      };
+
+      const origShowPauseMenu = game.showPauseMenu.bind(game);
+      game.showPauseMenu = function() {
+        if (window.__swOverlayActive) {
+          if (game.pauseMenu) game.pauseMenu.style.display = 'none';
+          return;
+        }
+        origShowPauseMenu();
+      };
+
+      // Track player damage for flawless detection
+      if (game.spiderman) {
+        const origHit = game.spiderman.handleHitWithProjectile?.bind(game.spiderman);
+        if (origHit) {
+          game.spiderman.handleHitWithProjectile = function(p) {
+            playerTookDamage = true;
+            origHit(p);
+          };
+        }
+      }
+    }
+
+    // Listen for game-engine events
+    window.addEventListener('SPIDERWORLD_GAMEOVER', (e) => {
+      const score = e.detail?.score || (game ? game.score : 0);
+      console.log('[SpiderWorld] Gameover event — score:', score);
+      window.__swOverlayActive = true;
+      el('death-score-val').textContent = score;
+      el('hud').style.display = 'none';
+      show('death-overlay');
+    });
+
+    window.addEventListener('SPIDERWORLD_RETRY', () => {
+      hide('death-overlay');
+      window.__swOverlayActive = false;
+      el('hud').style.display = 'block';
+      if (game) {
+        game.gameIsOver = false;
+        game.gameoverMenu.style.display = 'none';
+        game.restart();
+        setTimeout(patchGameCallbacks, 200);
+      }
+      levelStartMs = Date.now();
+      playerTookDamage = false;
+    });
+
+    window.addEventListener('SPIDERWORLD_TRACKER', () => {
+      hide('death-overlay');
+      window.__swOverlayActive = false;
+      if (game) { game.gameIsOver = false; game.gameoverMenu.style.display = 'none'; }
+      showMissionTracker();
+    });
+
+    window.addEventListener('SPIDERWORLD_SETTINGS', () => {
+      hide('death-overlay');
+      window.__swOverlayActive = false;
+      openSettings('death-overlay');
+    });
+
+    window.addEventListener('SPIDERWORLD_CHEAT', () => {
+      hide('death-overlay');
+      window.__swOverlayActive = false;
+      openCheatModal('death-overlay');
+    });
+
+    // ── CHEAT CODES SYSTEM ─────────────────────────
+    const CHEAT_CODES = {
+      'SPIDER1': 1, 'WARMUP': 1, 'LEVEL1': 1,
+      'WIND2': 2, 'CORRIDOR': 2, 'LEVEL2': 2,
+      'TURF3': 3, 'TURF': 3, 'LEVEL3': 3,
+      'FIRE4': 4, 'CROSSFIRE': 4, 'LEVEL4': 4,
+      'BUILD5': 5, 'CHAOS': 5, 'LEVEL5': 5,
+      'BOSS6': 6, 'ENFORCER': 6, 'LEVEL6': 6,
+      'NIGHT7': 7, 'NIGHTOPS': 7, 'LEVEL7': 7,
+      'SIGNAL8': 8, 'SIGNAL': 8, 'LEVEL8': 8,
+      'ROOF9': 9, 'SIEGE': 9, 'LEVEL9': 9,
+      'THREAD10': 10, 'THREAD': 10, 'LEVEL10': 10,
+      'STORM11': 11, 'APPROACH': 11, 'LEVEL11': 11,
+      'STINGER12': 12, 'STINGER': 12, 'LEVEL12': 12
+    };
+
+    let cheatCaller = null;
+
+    function openCheatModal(caller) {
+      cheatCaller = caller;
+      hide('death-overlay');
+      hide('mission-tracker');
+      hide('title-screen');
+      hide('settings-modal');
+      if (game && game.gameoverMenu) game.gameoverMenu.style.display = 'none';
+      if (game && game.pauseMenu) game.pauseMenu.style.display = 'none';
+
+      el('cheat-input').value = '';
+      el('cheat-msg').textContent = '';
+      el('cheat-msg').style.color = '#FF3D8A';
+      show('cheat-modal');
+      setTimeout(() => el('cheat-input').focus(), 100);
+    }
+
+    function applyCheatCode() {
+      const code = (el('cheat-input').value || '').trim().toUpperCase();
+      const msgEl = el('cheat-msg');
+
+      if (!code) {
+        msgEl.style.color = '#FF3D8A';
+        msgEl.textContent = 'PLEASE ENTER A CODE!';
+        return;
+      }
+
+      if (code === 'UNLOCKALL' || code === 'GODMODE' || code === 'CHEATPASS') {
+        SAVE.unlockedLevel = 12;
+        SAVE.spiderGirlUnlocked = true;
+        for (let i = 1; i <= 12; i++) {
+          if (!SAVE.levels[i]) SAVE.levels[i] = {};
+          SAVE.levels[i].completed = true;
+        }
+        writeSave(SAVE);
+        msgEl.style.color = '#00FF66';
+        msgEl.textContent = '✨ ALL 12 LEVELS & SPIDERGIRL UNLOCKED!';
+        setTimeout(() => {
+          hide('cheat-modal');
+          if (game) { game.gameIsOver = false; game.gameoverMenu.style.display = 'none'; }
+          showMissionTracker();
+        }, 1200);
+        return;
+      }
+
+      const targetLvl = CHEAT_CODES[code];
+      if (targetLvl) {
+        if (targetLvl > (SAVE.unlockedLevel || 1)) {
+          SAVE.unlockedLevel = targetLvl;
+        }
+        writeSave(SAVE);
+        msgEl.style.color = '#00FF66';
+        msgEl.textContent = `⚡ LEVEL ${targetLvl} CHEAT UNLOCKED! LAUNCHING...`;
+        setTimeout(() => {
+          hide('cheat-modal');
+          window.__swOverlayActive = false;
+          if (game) { game.gameIsOver = false; if (game.gameoverMenu) game.gameoverMenu.style.display = 'none'; }
+          startLevel(targetLvl);
+        }, 1000);
+      } else {
+        msgEl.style.color = '#FF3D8A';
+        msgEl.textContent = '❌ INVALID CHEAT CODE FOR THIS LEVEL!';
+      }
+    }
+
+    el('btn-cheat-submit').addEventListener('click', applyCheatCode);
+    el('cheat-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') applyCheatCode();
+    });
+
+    el('btn-cheat-close').addEventListener('click', () => {
+      hide('cheat-modal');
+      if (cheatCaller) {
+        if (cheatCaller === 'death-overlay') {
+          window.__swOverlayActive = true;
+          show('death-overlay');
+        } else {
+          show(cheatCaller);
+        }
+        cheatCaller = null;
+      }
+    });
+
+    // ── HUD UPDATER ──────────────────────────────────
+    function updateHpBar(cur, max) {
+      el('hp-bar-fill').style.width = Math.max(0, (cur/max)*100) + '%';
+    }
+    function updateBossBar(cur, max) {
+      el('boss-bar-fill').style.width = Math.max(0, (cur/max)*100) + '%';
+    }
+
+    // Game loop HUD sync (60fps polling)
+    setInterval(() => {
+      if (!game || !game.spiderman || !game.initialized) return;
+      if (el('hud').style.display === 'none') return;
+
+      const hp = game.spiderman.health || 0;
+      const maxHp = game.spiderman.maxHealth || 100;
+      updateHpBar(hp, maxHp);
+
+      const distM = Math.round(Math.max(0, game.spiderman.x || 0));
+      el('level-progress').textContent = `DIST: ${distM}m`;
+    }, 100);
+
+    // ── DEATH OVERLAY BUTTONS (delegate to events for consistency) ────────────
+    el('btn-retry').addEventListener('click', () => {
+      window.dispatchEvent(new CustomEvent('SPIDERWORLD_RETRY'));
+    });
+
+    el('btn-tracker-from-death').addEventListener('click', () => {
+      window.dispatchEvent(new CustomEvent('SPIDERWORLD_TRACKER'));
+    });
+
+    el('btn-cheat-from-death').addEventListener('click', () => {
+      window.dispatchEvent(new CustomEvent('SPIDERWORLD_CHEAT'));
+    });
+
+    el('btn-settings-from-death').addEventListener('click', () => {
+      window.dispatchEvent(new CustomEvent('SPIDERWORLD_SETTINGS'));
+    });
+
+    el('btn-cheat-tracker').addEventListener('click', () => {
+      hide('mission-tracker');
+      openCheatModal('mission-tracker');
+    });
+
+    // ── NEWS CARD ─────────────────────────────────────
+    function showNewsCard(levelId, onContinue) {
+      el('news-text').textContent = NEWS_CARDS[Math.min(levelId - 1, NEWS_CARDS.length - 1)] ||
+        "The city never sleeps. Neither does he.";
+      show('news-card');
+      el('btn-news-continue').onclick = () => {
+        hide('news-card');
+        if (onContinue) onContinue();
+      };
+    }
+
+    // ── SPIDERGIRL UNLOCK SCREEN ──────────────────────
+    function showSpiderGirlUnlock() {
+      // Draw SpiderGirl sprite on canvas
+      const c = el('spidergirl-sprite-canvas');
+      if (c) {
+        const ctx = c.getContext('2d');
+        drawSpiderGirlSprite(ctx, 60, 80, 50, 80);
+      }
+      show('unlock-screen');
+    }
+
+    function drawSpiderGirlSprite(ctx, cx, cy, w, h) {
+      ctx.clearRect(0, 0, 120, 160);
+      // Body
+      ctx.fillStyle = '#FF3D8A';
+      ctx.fillRect(cx - 14, cy - 10, 28, 30);
+      // Side panels white
+      ctx.fillStyle = '#F5F5F5';
+      ctx.fillRect(cx - 18, cy - 8, 8, 26);
+      ctx.fillRect(cx + 10, cy - 8, 8, 26);
+      // Black web lines on body
+      ctx.strokeStyle = '#111';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 10); ctx.lineTo(cx, cy + 20);
+      ctx.moveTo(cx - 14, cy + 4); ctx.lineTo(cx + 14, cy + 4);
+      ctx.stroke();
+      // Head
+      ctx.fillStyle = '#FF3D8A';
+      ctx.beginPath(); ctx.arc(cx, cy - 16, 12, 0, Math.PI * 2); ctx.fill();
+      // Eyes white lenses
+      ctx.fillStyle = '#FFF';
+      ctx.beginPath(); ctx.ellipse(cx - 5, cy - 17, 5, 4, -0.3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx + 5, cy - 17, 5, 4, 0.3, 0, Math.PI * 2); ctx.fill();
+      // Legs
+      ctx.fillStyle = '#C42060';
+      ctx.fillRect(cx - 12, cy + 20, 10, 28);
+      ctx.fillRect(cx + 2, cy + 20, 10, 28);
+      // Boots
+      ctx.fillStyle = '#111';
+      ctx.fillRect(cx - 12, cy + 40, 10, 8);
+      ctx.fillRect(cx + 2, cy + 40, 10, 8);
+      // Arms
+      ctx.fillStyle = '#FF3D8A';
+      ctx.fillRect(cx - 22, cy - 8, 10, 22);
+      ctx.fillRect(cx + 12, cy - 8, 10, 22);
+    }
+
+    el('btn-unlock-ok').addEventListener('click', () => {
+      hide('unlock-screen');
+      SAVE.spiderGirlUnlocked = true;
+      writeSave(SAVE);
+      showMissionTracker();
+    });
+
+    // ── BOOT SEQUENCE ────────────────────────────────
+    function boot() {
+      SAVE = loadSave();
+
+      const canvas = el('canvas');
+      function scaleCanvas() {
+        if (!canvas) return;
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.transform = 'none';
+      }
+
+      scaleCanvas();
+      window.addEventListener('resize', scaleCanvas);
+      document.addEventListener('fullscreenchange', scaleCanvas);
+      document.addEventListener('webkitfullscreenchange', scaleCanvas);
+
+      function toggleFullscreen() {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+          const root = document.documentElement;
+          if (root.requestFullscreen) root.requestFullscreen();
+          else if (root.webkitRequestFullscreen) root.webkitRequestFullscreen();
+        } else {
+          if (document.exitFullscreen) document.exitFullscreen();
+          else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        }
+      }
+
+      document.addEventListener('fullscreenchange', () => {
+        const btn = el('fs-btn');
+        if (btn) btn.textContent = document.fullscreenElement ? '⛶ EXIT' : '⛶ FS';
+        scaleCanvas();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if ((e.key === 'f' || e.key === 'F') && e.target.tagName !== 'INPUT') {
+          toggleFullscreen();
+        }
+      });
+
+      const fsBtn = el('fs-btn');
+      if (fsBtn) fsBtn.addEventListener('click', toggleFullscreen);
+
+      if (!SAVE.photoDismissed) {
+        show('photo-notice');
+      } else {
+        showTitle();
+      }
+    }
+
+    // Wait for DOM to be fully loaded
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', boot);
+    } else {
+      boot();
+    }
+
+  })();
+  </script>
+</body>
+</html>
