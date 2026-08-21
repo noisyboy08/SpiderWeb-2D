@@ -1,6 +1,6 @@
-# Ralph Loop — Working Instructions for SpiderWorld
+# Ralph Loop — Working Instructions for Spiderweb
 
-You are working autonomously in a loop on the "SpiderWorld" game project. Every
+You are working autonomously in a loop on the "Spiderweb" game project. Every
 iteration, follow this exact process:
 
 1. **Read context first, every time:**

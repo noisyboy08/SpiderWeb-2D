@@ -1,5 +1,5 @@
-# SPIDERWORLD — Full Game Design & Technical Specification
-### (Working file name: Spiderman2d.md — internal project/game title: "SpiderWorld")
+# SPIDERWEB — Full Game Design & Technical Specification
+### (Working file name: Spiderman2d.md — internal project/game title: "Spiderweb")
 
 > This is a single, self-contained specification document for a 2D web-swinging action-platformer game. It is written to be handed directly to an AI coding agent (e.g. Google Antigravity, Claude Code, Cursor, or similar) as the master build brief. It contains story, characters, mechanics, physics formulas, level-by-level data, UI specs, folder structure, flowcharts, and asset sourcing guidance — everything needed to build the game end to end without further clarification.
 
@@ -34,7 +34,7 @@
 Paste this block as your first message to the coding agent, then paste/attach the rest of this document as supporting context:
 
 ```
-Build "SpiderWorld" — a complete, playable 2D web-swinging action-platformer game
+Build "Spiderweb" — a complete, playable 2D web-swinging action-platformer game
 that runs in any modern browser on both desktop (mouse + keyboard) and mobile
 (touch), with fast load time and zero input lag as the top priority.
 
@@ -125,13 +125,13 @@ Example news-card lines (write more like these, all original):
 - *"Rooftop chaos reported downtown — witnesses describe a masked figure in navy and teal."*
 - *"Security firm denies any connection to last night's rooftop incident."*
 - *"Who is he? City records show no match for the vigilante's description."*
-- *"Sightings increase across the skyline — some are calling him 'SpiderWorld.'"*
+- *"Sightings increase across the skyline — some are calling him 'Spiderweb.'"*
 
 ---
 
 ## 4. CHARACTERS — BIOS, STATS & VISUAL SPECS
 
-### 4.1 Jax Steele ("SpiderWorld") — Player Hero (default)
+### 4.1 Jax Steele ("Spiderweb") — Player Hero (default)
 - **Suit colors:** Deep navy blue (`#1B2A4A`) primary, electric teal (`#2FE3D6`) accents, geometric web-pattern (straight lines, not organic curls) for readability at small pixel sizes.
 - **Power source:** Experimental grapple-tech suit (not a spider-bite origin) — justifies suit upgrades and unlockable variants later.
 - **Base stats:** Health 100. Swing speed: baseline (multiplier ×1.0). Damage per swing-strike: baseline (×1.0). Special: none (unlocks suit upgrades post-launch, out of scope for v1).
@@ -168,7 +168,7 @@ Example news-card lines (write more like these, all original):
 ## 5. CORE MECHANICS — PHYSICS DEEP DIVE
 
 ### 5.1 Why a hand-tuned formula, not a physics engine
-Full rope/physics simulations (recalculating forces every frame with a general-purpose solver) are the #1 cause of the "web physics fall apart at normal speed" bug seen in most fan-made Spider-Man games. Instead, SpiderWorld uses a **closed-form pendulum formula** — cheap to compute (a few trig calls per frame), numerically stable at any frame rate, and easy to hand-tune for game feel.
+Full rope/physics simulations (recalculating forces every frame with a general-purpose solver) are the #1 cause of the "web physics fall apart at normal speed" bug seen in most fan-made Spider-Man games. Instead, Spiderweb uses a **closed-form pendulum formula** — cheap to compute (a few trig calls per frame), numerically stable at any frame rate, and easy to hand-tune for game feel.
 
 ### 5.2 Swing state — reference formulas (pseudocode)
 ```
@@ -425,7 +425,7 @@ Bosses only take damage from a swing-strike (Section 5.6) landed during a non-in
 ### 10.2 Mission Tracker (Level Select) screen
 A retro pixel-framed "tracker" style screen, fully original art (no real maps, logos, or photos):
 - **Thick pixel-art bezel border**, navy/teal, with corner rivet details.
-- **Top bar:** Blocky pixel-font title "SPIDERWORLD: MISSION TRACKER." Top-left: circular hero-icon button (opens stats/profile). Top-right: spider-emblem icon button (opens Settings, including the accessibility toggle from Section 15).
+- **Top bar:** Blocky pixel-font title "SPIDERWEB: MISSION TRACKER." Top-left: circular hero-icon button (opens stats/profile). Top-right: spider-emblem icon button (opens Settings, including the accessibility toggle from Section 15).
 - **Main area:** A stylized top-down rooftop skyline (matches in-game art style) with a glowing teal web-strand path connecting 12 level nodes in sequence.
 - **Node states:** Locked (greyed badge + padlock) / Completed (filled badge, glow, checkmark) / Current (pulsing, brightest glow) / Mini-boss nodes (distinct emblem shape for Levels 6 & 10) / Final boss node (largest marker, scorpion-tail emblem, Level 12).
 - **Info popup on node tap/click:** Level name, best time (if replayed), "Flawless" badge if earned, and a "DEPLOY" button to start/replay that level.

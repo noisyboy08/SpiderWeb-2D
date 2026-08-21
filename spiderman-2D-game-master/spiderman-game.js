@@ -207,21 +207,21 @@ SpidermanGame.prototype.load = function() {
 	gameoverMenu.style.display = "none";
 
 	gameoverMenu.querySelector(".spiderman-game-menu-button-restart").onclick = function() {
-		console.log("[SpiderWorld] Retry clicked");
+		console.log("[Spiderweb] Retry clicked");
 		if (window.__swOverlayActive) { window.dispatchEvent(new CustomEvent('SPIDERWORLD_RETRY')); return; }
 		self.restart();
 	}
 	gameoverMenu.querySelector(".spiderman-game-menu-button-tracker").onclick = function() {
-		console.log("[SpiderWorld] Mission Tracker clicked");
+		console.log("[Spiderweb] Mission Tracker clicked");
 		if (window.__swOverlayActive) { window.dispatchEvent(new CustomEvent('SPIDERWORLD_TRACKER')); return; }
 		self.restart();
 	}
 	gameoverMenu.querySelector(".spiderman-game-menu-button-cheat").onclick = function() {
-		console.log("[SpiderWorld] Cheat Code clicked");
+		console.log("[Spiderweb] Cheat Code clicked");
 		if (window.__swOverlayActive) { window.dispatchEvent(new CustomEvent('SPIDERWORLD_CHEAT')); return; }
 	}
 	gameoverMenu.querySelector(".spiderman-game-menu-button-settings").onclick = function() {
-		console.log("[SpiderWorld] Settings clicked");
+		console.log("[Spiderweb] Settings clicked");
 		if (window.__swOverlayActive) { window.dispatchEvent(new CustomEvent('SPIDERWORLD_SETTINGS')); return; }
 		self.showPauseMenu();
 	}
@@ -644,11 +644,11 @@ SpidermanGame.prototype.restart = function() {
 
 SpidermanGame.prototype.gameover = function() {
 	if (!this.gameIsOver) {
-		console.log("[SpiderWorld] Player health reached 0 or fell into pit - triggering Game Over UI");
+		console.log("[Spiderweb] Player health reached 0 or fell into pit - triggering Game Over UI");
 		this.gameIsOver = true;
 		window.dispatchEvent(new CustomEvent('SPIDERWORLD_GAMEOVER', { detail: { score: this.score } }));
 	}
-	// Only show built-in menu if SpiderWorld overlay is NOT active
+	// Only show built-in menu if Spiderweb overlay is NOT active
 	if (!window.__swOverlayActive) {
 		this.showGameoverMenu();
 	}

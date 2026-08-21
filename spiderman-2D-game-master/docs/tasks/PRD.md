@@ -1,7 +1,7 @@
-# Product Requirements — SpiderWorld
+# Product Requirements — Spiderweb
 
 ## Goal
-Build/complete "SpiderWorld," a 2D web-swinging action-platformer web game, per
+Build/complete "Spiderweb," a 2D web-swinging action-platformer web game, per
 the full specification in `Spiderman2d.md` (must be present in the project
 root or `docs/` — locate and treat it as the source of truth for all story,
 physics, level, and UI details referenced below).
@@ -44,7 +44,7 @@ item in a higher-priority section is verified working in an actual browser
   3 bosses (The Enforcer, Thread, Stinger) implemented per Section 9,
   including telegraphed attacks and Stinger's two-phase fight.
 
-## PRIORITY 2 — UI LAYER (per the separate SpiderWorld Tracker design prompt already provided)
+## PRIORITY 2 — UI LAYER (per the separate Spiderweb Tracker design prompt already provided)
 
 - [x] Title screen — confirmed working, do not modify without reason.
 - [x] Mission Tracker screen — confirmed working, do not modify without

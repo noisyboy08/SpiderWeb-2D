@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="description" content="SpiderWorld — 2D Web-Swinging Action Platformer Game by Jax Steele" />
-  <meta name="author" content="SpiderWorld Dev Team" />
-  <title>SpiderWorld — 2D Web-Swinging Platformer</title>
+  <meta name="description" content="Spiderweb — 2D Web-Swinging Action Platformer Game by Jax Steele" />
+  <meta name="author" content="Spiderweb Dev Team" />
+  <title>Spiderweb — 2D Web-Swinging Platformer</title>
   <link rel="shortcut icon" href="images/spider-head.png" />
 
   <style>
@@ -361,7 +361,7 @@
   <div id="portrait-lock">
     <div>
       <div class="rotate-icon">📱</div>
-      <div class="rotate-text">Rotate your device<br>to landscape mode<br>to play SpiderWorld</div>
+      <div class="rotate-text">Rotate your device<br>to landscape mode<br>to play Spiderweb</div>
     </div>
   </div>
 
@@ -370,7 +370,7 @@
     <div class="sw-panel" id="photo-panel">
       <h2>⚠️ Photosensitivity Notice</h2>
       <p>
-        <strong>SpiderWorld</strong> contains flashing lights and strobing visual effects, particularly in Levels 5, 7, and 11, and during all boss encounters.<br><br>
+        <strong>Spiderweb</strong> contains flashing lights and strobing visual effects, particularly in Levels 5, 7, and 11, and during all boss encounters.<br><br>
         If you or someone nearby has photosensitive epilepsy or a similar condition, please enable <strong>Reduce Flash</strong> in Settings before playing.
       </p>
       <button class="sw-btn" id="btn-photo-ok">I UNDERSTAND — CONTINUE</button>
@@ -391,7 +391,7 @@
   <div id="mission-tracker" class="sw-overlay" style="display:none;">
     <div class="tracker-container">
       <div class="tracker-topbar">
-        <div class="tracker-topbar-title">SPIDERWORLD: MISSION TRACKER</div>
+        <div class="tracker-topbar-title">SPIDERWEB: MISSION TRACKER</div>
         <div class="tracker-topbar-actions">
           <button class="tracker-icon-btn" id="btn-char-toggle">JAX STEELE</button>
           <button class="tracker-icon-btn" id="btn-cheat-tracker">🔑 CHEAT CODE</button>
@@ -504,7 +504,7 @@
   <!-- ──── IN-LEVEL HUD ──── -->
   <div id="hud">
     <div id="hp-bar-wrap">
-      <div id="hp-label">SPIDERWORLD — JAX STEELE</div>
+      <div id="hp-label">SPIDERWEB — JAX STEELE</div>
       <div id="hp-bar-bg"><div id="hp-bar-fill" style="width:100%;"></div></div>
     </div>
     <div id="boss-bar-wrap">
@@ -523,13 +523,13 @@
   <!-- ──── ORIGINAL GAME ENGINE ──── -->
   <script src="spiderman-game.js"></script>
 
-  <!-- ──── SPIDERWORLD MAIN CONTROLLER ──── -->
+  <!-- ──── SPIDERWEB MAIN CONTROLLER ──── -->
   <script>
   (function() {
     'use strict';
 
     // ── CONSTANTS ──────────────────────────────────
-    const GAME_NAME = 'SpiderWorld';
+    const GAME_NAME = 'Spiderweb';
     const SAVE_KEY  = 'SPIDERWORLD_SAVE_V1';
 
     const NEWS_CARDS = [
@@ -854,7 +854,7 @@
 
       // Update HUD labels
       const isSpiderGirl = SAVE.selectedChar === 'spidergirl';
-      el('hp-label').textContent = isSpiderGirl ? `SPIDERWORLD — SPIDERGIRL (LVL ${id})` : `SPIDERWORLD — JAX STEELE (LVL ${id})`;
+      el('hp-label').textContent = isSpiderGirl ? `SPIDERWEB — SPIDERGIRL (LVL ${id})` : `SPIDERWEB — JAX STEELE (LVL ${id})`;
       el('hp-bar-fill').style.background = isSpiderGirl
         ? 'linear-gradient(90deg,#FF3D8A,#C42060)'
         : 'linear-gradient(90deg,#00C2FF,#0082C8)';
@@ -874,7 +874,7 @@
     }
 
     function patchGameCallbacks() {
-      // Suppress the built-in gameover/pause menus when SpiderWorld overlay is active
+      // Suppress the built-in gameover/pause menus when Spiderweb overlay is active
       const origShowGameoverMenu = game.showGameoverMenu.bind(game);
       game.showGameoverMenu = function() {
         if (window.__swOverlayActive) {
@@ -908,7 +908,7 @@
     // Listen for game-engine events
     window.addEventListener('SPIDERWORLD_GAMEOVER', (e) => {
       const score = e.detail?.score || (game ? game.score : 0);
-      console.log('[SpiderWorld] Gameover event — score:', score);
+      console.log('[Spiderweb] Gameover event — score:', score);
       window.__swOverlayActive = true;
       el('death-score-val').textContent = score;
       el('hud').style.display = 'none';

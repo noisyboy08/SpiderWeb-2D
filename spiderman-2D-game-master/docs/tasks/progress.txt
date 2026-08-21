@@ -1,4 +1,4 @@
-SPIDERWORLD — PROGRESS LOG
+SPIDERWEB — PROGRESS LOG
 Format: [DATE] — [TASK] — [HOW VERIFIED]
 
 --- Known state before this loop started ---
@@ -11,6 +11,6 @@ These three are logged as Priority 0 in PRD.md and must be fixed first.
 
 --- Loop entries start below ---
 [2026-08-14] — Fixed canvas/viewport scaling — 1280x720 logical resolution scaled dynamically via CSS transform to fill window edge-to-edge on resize with zero dead space.
-[2026-08-14] — Rebuilt player character sprite — SpiderWorld humanoid hero rendered with navy base (#0B192C), bright teal accents (#00F2FE), masked head with glowing white eyes, and standing/running/jumping/shooting animation states.
+[2026-08-14] — Rebuilt player character sprite — Spiderweb humanoid hero rendered with navy base (#0B192C), bright teal accents (#00F2FE), masked head with glowing white eyes, and standing/running/jumping/shooting animation states.
 [2026-08-14] — Fixed death screen freeze & UI overlay — Continuous requestAnimFrame render loop maintained during death/pause, console log added on death trigger, and 3-button modal UI overlay (RETRY, MISSION TRACKER, SETTINGS) displayed.
 
