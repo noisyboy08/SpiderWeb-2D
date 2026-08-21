@@ -66,6 +66,14 @@ python3 -m http.server 8000
 ```
 Then visit `http://localhost:8000` or the specified port in your browser.
 
+## 🤫 Secret Cheat Codes
+
+Click the **🔑 CHEAT CODE** button in the Mission Tracker or the Game Over screen and enter any of these secret passwords:
+
+- **`UNLOCKALL`** - Instantly unlocks all levels.
+- **`GODMODE`** - Enables invincibility / God Mode.
+- **`CHEATPASS`** - Bypass level restrictions.
+
 ## 📜 Lore
 
 *"Sightings increase across the skyline — some are calling him 'Spiderweb.'"*
