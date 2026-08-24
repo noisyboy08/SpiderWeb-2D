@@ -32,12 +32,12 @@ html, body {
 
 #canvas {
 	position: absolute;
-	top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
-	transform-origin: center center;
-	box-shadow: 0 0 30px rgba(0, 242, 254, 0.2);
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
 	background: #08101D;
+	image-rendering: pixelated;
 }
 
 .spiderman-game-menu-container {

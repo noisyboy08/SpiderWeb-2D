@@ -68,7 +68,7 @@ var KEY = {
 	ARROW_DOWN: 40,
 	SPACEBAR: 32,
 	A: 65,
-	S: 87,
+	S: 83,
 	D: 68,
 	W: 87,
 	ESC: 27,
@@ -118,13 +118,15 @@ SpidermanGame.prototype.soundEffects       = true;
 SpidermanGame.prototype.escapeKey          = false;
 SpidermanGame.prototype.muted              = false;
 SpidermanGame.prototype.slowmotion         = false;
+SpidermanGame.prototype._loopGen           = 0;
 
 SpidermanGame.prototype.fitCanvasToViewport = function() {
 	if (!this.canvas) return;
-	var scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
-	this.canvas.style.width = '1280px';
-	this.canvas.style.height = '720px';
-	this.canvas.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
+	this.canvas.style.width = '100vw';
+	this.canvas.style.height = '100vh';
+	this.canvas.style.top = '0';
+	this.canvas.style.left = '0';
+	this.canvas.style.transform = 'none';
 };
 
 SpidermanGame.prototype.load = function() {
@@ -198,6 +200,7 @@ SpidermanGame.prototype.load = function() {
 		'<div class="spiderman-game-menu-title" style="font-size: 16px;">FINAL SCORE: <span class="spiderman-game-score">0</span></div>' +
 		'<div class="spiderman-game-menu-button spiderman-game-menu-button-restart">RETRY</div>' +
 		'<div class="spiderman-game-menu-button spiderman-game-menu-button-tracker">MISSION TRACKER</div>' +
+		'<div class="spiderman-game-menu-button spiderman-game-menu-button-cheat">CHEAT CODE</div>' +
 		'<div class="spiderman-game-menu-button spiderman-game-menu-button-settings">SETTINGS</div>' +
 	'</div>';
 	gameoverMenu = gameoverMenu.firstChild;
@@ -205,15 +208,21 @@ SpidermanGame.prototype.load = function() {
 
 	gameoverMenu.querySelector(".spiderman-game-menu-button-restart").onclick = function() {
 		console.log("[Spiderweb] Retry clicked");
+		if (window.__swOverlayActive) { window.dispatchEvent(new CustomEvent('SPIDERWORLD_RETRY')); return; }
 		self.restart();
 	}
 	gameoverMenu.querySelector(".spiderman-game-menu-button-tracker").onclick = function() {
 		console.log("[Spiderweb] Mission Tracker clicked");
-		alert("Returning to Mission Tracker / Level Select");
+		if (window.__swOverlayActive) { window.dispatchEvent(new CustomEvent('SPIDERWORLD_TRACKER')); return; }
 		self.restart();
+	}
+	gameoverMenu.querySelector(".spiderman-game-menu-button-cheat").onclick = function() {
+		console.log("[Spiderweb] Cheat Code clicked");
+		if (window.__swOverlayActive) { window.dispatchEvent(new CustomEvent('SPIDERWORLD_CHEAT')); return; }
 	}
 	gameoverMenu.querySelector(".spiderman-game-menu-button-settings").onclick = function() {
 		console.log("[Spiderweb] Settings clicked");
+		if (window.__swOverlayActive) { window.dispatchEvent(new CustomEvent('SPIDERWORLD_SETTINGS')); return; }
 		self.showPauseMenu();
 	}
 
@@ -298,6 +307,7 @@ SpidermanGame.prototype.load = function() {
 
 				self.scene.spiderman = spiderman;
 				self.scene.roofs = [roof];
+				self._loopGen = 0;  // fresh loop generation
 				self.update();
 				self.playSound(AUDIO_LOOP[0], false, 0);
 
@@ -361,6 +371,10 @@ SpidermanGame.prototype.unmute = function() {
 }
 
 SpidermanGame.prototype.showPauseMenu = function() {
+	if (window.__swOverlayActive) {
+		if (this.pauseMenu) this.pauseMenu.style.display = "none";
+		return;
+	}
 	if (this.gameoverMenu.style.display == "block") return;
 	var pauseMenu = this.pauseMenu;
 
@@ -467,6 +481,11 @@ SpidermanGame.prototype.drawEnemies = function() {
 }
 
 SpidermanGame.prototype.update = function() {
+	// Guard: each loop generation captures its ID at creation.
+	// When restart() increments _loopGen, all old loops detect the
+	// mismatch and stop themselves — preventing speed accumulation.
+	var myGen = this._loopGen;
+
 	// Always clear the canvas for redrawing
 	this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 	this.drawBackground();
@@ -497,8 +516,8 @@ SpidermanGame.prototype.update = function() {
 			}
 		}
 	} else if (this.gameIsOver) {
+		// Freeze the scene — just draw, no physics updates
 		this.drawEnemies();
-		this.scene.spiderman.update();
 		this.showGameoverMenu();
 	} else if (this.paused) {
 		this.drawEnemies();
@@ -511,7 +530,11 @@ SpidermanGame.prototype.update = function() {
 	this.ctx.textBaseline = "top";
 	this.ctx.fillText(this.score, this.canvas.width / 2, 10);
 
-	requestAnimFrame(this.update.bind(this));
+	// Only schedule next frame if this loop is still the active one
+	var self = this;
+	requestAnimFrame(function() {
+		if (self._loopGen === myGen) self.update();
+	});
 }
 
 
@@ -596,6 +619,9 @@ SpidermanGame.prototype.isCharacterAtPoint = function(x, y) {
 }
 
 SpidermanGame.prototype.restart = function() {
+	// Kill the current animation loop by advancing the generation
+	this._loopGen = (this._loopGen || 0) + 1;
+
 	var roof = new Roof(this);
 	roof.x = 0;
 
@@ -613,15 +639,19 @@ SpidermanGame.prototype.restart = function() {
 	this.gameoverMenu.style.display = "none";
 	this.pauseMenu.style.display = "none";
 
-	this.update();
+	this.update();  // start single fresh loop
 }
 
 SpidermanGame.prototype.gameover = function() {
 	if (!this.gameIsOver) {
 		console.log("[Spiderweb] Player health reached 0 or fell into pit - triggering Game Over UI");
 		this.gameIsOver = true;
+		window.dispatchEvent(new CustomEvent('SPIDERWORLD_GAMEOVER', { detail: { score: this.score } }));
 	}
-	this.showGameoverMenu();
+	// Only show built-in menu if Spiderweb overlay is NOT active
+	if (!window.__swOverlayActive) {
+		this.showGameoverMenu();
+	}
 }
 
 
@@ -638,7 +668,7 @@ function SpiderMan(game) {
 	this.health = 5;
 	this.maxHealth = 5;
 
-	this.web = 50;
+	this.web = 100;
 
 	this.velocityX = 0;
 	this.velocityY = 0;
@@ -656,7 +686,8 @@ function SpiderMan(game) {
 	this.gravityForce = 0.7;
 
 	this.runningDirection = 0;
-	this.runningSpeed = 5;
+	var speedMult = (game && game.speedMultiplier) ? game.speedMultiplier : 1.0;
+	this.runningSpeed = 5 * speedMult;
 
 	this.shootingFrame = 0;
 	this.wasDamagedOnPreviousFrame = false;
@@ -674,7 +705,7 @@ SpiderMan.prototype.hasStates = function(states) {
 	states = states.split(" ");
 	var hasStates = true;
 	for (var i = 0; i < states.length; i++) {
-		hasState = hasState && this.hasState(states[i]);
+		hasStates = hasStates && this.hasState(states[i]);
 	}
 	return hasStates;
 }
@@ -752,7 +783,7 @@ SpiderMan.prototype.keydown = function(keyCode) {
 SpiderMan.prototype.keyup = function(keyCode) {
 	this.runningFrame = 0;
 
-	if (keyCode == KEY.ARROW_RIGHT || keyCode == KEY.ARROW_LEFT) {
+	if (keyCode == KEY.ARROW_RIGHT || keyCode == KEY.ARROW_LEFT || keyCode == KEY.D || keyCode == KEY.A) {
 		this.removeState("RUNNING");
 	}
 
@@ -869,14 +900,14 @@ SpiderMan.prototype.drawWebbar = function() {
 
 // function that gets called with global update function
 SpiderMan.prototype.update = function() {
-	if (this.keyIsDown(KEY.ARROW_UP) && !this.hasState("FALL")) {
+	if ((this.keyIsDown(KEY.ARROW_UP) || this.keyIsDown(KEY.W)) && !this.hasState("FALL")) {
 		this.addState("JUMP");
 	}
-	if (this.keyIsDown(KEY.ARROW_RIGHT)) {
+	if (this.keyIsDown(KEY.ARROW_RIGHT) || this.keyIsDown(KEY.D)) {
 		this.addState("RUNNING");
 		this.runningDirection = DIRECTION.RIGHT;
 	}
-	if (this.keyIsDown(KEY.ARROW_LEFT)) {
+	if (this.keyIsDown(KEY.ARROW_LEFT) || this.keyIsDown(KEY.A)) {
 		this.addState("RUNNING");
 		this.runningDirection = DIRECTION.LEFT;
 	}
@@ -1158,10 +1189,11 @@ Enemy.prototype.shoot = function() {
 	projectile.x = this.x - knife.width * this.scale / 2;
 	// so knifes height is divided by 4 because, 2 is for center, and another 2 is for 0.5 scale
 	projectile.y = this.y + (this.stateImg.height * this.scale / 2) - (knife.height * this.scale / 4);
+	var speedMult = (this.game && this.game.speedMultiplier) ? this.game.speedMultiplier : 1.0;
 	projectile.update = function() {
 		this.ctx.drawImage(knife, this.x - this.game.cameraX, this.y, knife.width * self.scale / 2, knife.height * self.scale / 2);
 
-		this.x -= 10;
+		this.x -= 10 * speedMult;
 	}
 
 	this.game.addProjectile(projectile);
