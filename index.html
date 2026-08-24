@@ -354,47 +354,140 @@
     }
     .spiderman-game-menu-button:active { transform: translateY(1px); }
 
-    /* ──────────── MOBILE TOUCH CONTROLS ──────────── */
+    /* ════════════════════════════════════════
+       MOBILE TOUCH CONTROLS — Joystick Style
+       ════════════════════════════════════════ */
     #touch-controls {
       display: none;
-      position: fixed; bottom: 0; left: 0; right: 0;
+      position: fixed; bottom: 0; left: 0; right: 0; top: 0;
       z-index: 9100;
-      padding: 12px 20px 20px;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    /* Show only on real touch devices */
+    @media (hover: none) and (pointer: coarse) {
+      #touch-controls { display: block; }
+    }
+
+    /* ── JOYSTICK (left side) ── */
+    #joy-zone {
+      position: absolute;
+      bottom: 20px; left: 20px;
+      width: 160px; height: 160px;
+      pointer-events: all;
+      touch-action: none;
+    }
+    #joy-outer {
+      position: absolute; inset: 0;
+      border-radius: 50%;
+      background: rgba(8, 21, 36, 0.55);
+      border: 2.5px solid rgba(0, 194, 255, 0.45);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 0 24px rgba(0, 194, 255, 0.12), inset 0 0 20px rgba(0, 194, 255, 0.06);
+    }
+    /* Crosshair lines inside outer ring */
+    #joy-outer::before, #joy-outer::after {
+      content: '';
+      position: absolute; top: 50%; left: 50%;
+      background: rgba(0, 194, 255, 0.15);
+    }
+    #joy-outer::before { width: 1px; height: 80%; transform: translate(-50%, -50%); }
+    #joy-outer::after  { width: 80%; height: 1px; transform: translate(-50%, -50%); }
+    #joy-knob {
+      position: absolute;
+      width: 68px; height: 68px;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, rgba(0, 230, 255, 0.5), rgba(0, 130, 200, 0.35));
+      border: 2px solid rgba(0, 194, 255, 0.8);
+      box-shadow: 0 0 18px rgba(0, 194, 255, 0.5), inset 0 0 10px rgba(0, 194, 255, 0.15);
+      transition: box-shadow 0.1s;
+      pointer-events: none;
+    }
+    #joy-knob.active {
+      box-shadow: 0 0 30px rgba(0, 242, 254, 0.8), inset 0 0 16px rgba(0, 242, 254, 0.3);
+    }
+
+    /* ── ACTION BUTTONS (right side) ── */
+    #action-zone {
+      position: absolute;
+      bottom: 20px; right: 20px;
+      width: 200px; height: 160px;
+      pointer-events: none;
+    }
+    .act-btn {
+      position: absolute;
+      width: 70px; height: 70px;
+      border-radius: 50%;
+      border: 2px solid rgba(0, 194, 255, 0.55);
+      background: rgba(8, 21, 36, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: all;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      cursor: pointer;
+      transition: background 0.12s, box-shadow 0.12s, transform 0.08s;
+      box-shadow: 0 0 16px rgba(0, 194, 255, 0.12);
+    }
+    .act-btn-inner {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0, 194, 255, 0.08);
+      border: 1.5px solid rgba(0, 194, 255, 0.3);
+      font-size: 22px;
+      color: rgba(0, 194, 255, 0.9);
       pointer-events: none;
       user-select: none;
     }
-    @media (hover: none) and (pointer: coarse) {
-      #touch-controls { display: flex; justify-content: space-between; align-items: flex-end; }
+    .act-btn.pressed {
+      background: rgba(0, 194, 255, 0.28);
+      box-shadow: 0 0 26px rgba(0, 242, 254, 0.6);
+      transform: scale(0.93);
     }
-    .tc-left, .tc-right { display: flex; gap: 10px; pointer-events: all; }
-    .tc-btn {
-      width: 64px; height: 64px;
-      border-radius: 50%;
-      border: 2px solid rgba(0, 194, 255, 0.7);
-      background: rgba(8, 21, 36, 0.75);
-      color: #00C2FF;
-      font-size: 22px;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
-      backdrop-filter: blur(6px);
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
-      transition: background 0.1s;
+    /* Jump — top-right */
+    #tc-jump {
+      top: 0; right: 0;
+      border-color: rgba(0, 242, 254, 0.65);
     }
-    .tc-btn:active, .tc-btn.pressed {
-      background: rgba(0, 194, 255, 0.35);
-      border-color: #00F2FE;
-      box-shadow: 0 0 18px rgba(0, 194, 255, 0.6);
+    #tc-jump .act-btn-inner { border-color: rgba(0, 242, 254, 0.4); color: #00F2FE; }
+    #tc-jump.pressed { box-shadow: 0 0 26px rgba(0, 242, 254, 0.75); }
+    /* Shoot / Web — bottom-left of action zone */
+    #tc-shoot {
+      bottom: 0; left: 0;
+      border-color: rgba(255, 61, 138, 0.6);
+      background: rgba(255, 61, 138, 0.12);
     }
-    .tc-shoot {
-      width: 72px; height: 72px;
-      background: rgba(255, 61, 138, 0.2);
-      border-color: rgba(255, 61, 138, 0.7);
+    #tc-shoot .act-btn-inner {
+      background: rgba(255, 61, 138, 0.1);
+      border-color: rgba(255, 61, 138, 0.4);
       color: #FF3D8A;
-      font-size: 18px;
-      border-radius: 50%;
     }
-    .tc-shoot.pressed { background: rgba(255, 61, 138, 0.45); }
+    #tc-shoot.pressed {
+      background: rgba(255, 61, 138, 0.35);
+      box-shadow: 0 0 26px rgba(255, 61, 138, 0.7);
+    }
+    /* Pause mini button — top right of screen */
+    #tc-pause {
+      position: absolute;
+      top: 16px; right: 16px;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(0, 194, 255, 0.4);
+      background: rgba(8, 21, 36, 0.65);
+      backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: rgba(0, 194, 255, 0.8);
+      pointer-events: all;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
   </style>
 </head>
 <body>
@@ -564,14 +657,24 @@
 
   <!-- ──── MOBILE TOUCH CONTROLS ──── -->
   <div id="touch-controls">
-    <div class="tc-left">
-      <button class="tc-btn" id="tc-left" aria-label="Move Left">◀</button>
-      <button class="tc-btn" id="tc-right" aria-label="Move Right">▶</button>
+    <!-- Virtual Joystick -->
+    <div id="joy-zone" aria-label="Movement joystick">
+      <div id="joy-outer"></div>
+      <div id="joy-knob"></div>
     </div>
-    <div class="tc-right">
-      <button class="tc-btn tc-shoot" id="tc-shoot" aria-label="Shoot Web">🕸</button>
-      <button class="tc-btn" id="tc-jump" aria-label="Jump">▲</button>
+
+    <!-- Action Buttons -->
+    <div id="action-zone">
+      <button class="act-btn" id="tc-jump" aria-label="Jump">
+        <div class="act-btn-inner">▲</div>
+      </button>
+      <button class="act-btn" id="tc-shoot" aria-label="Shoot Web">
+        <div class="act-btn-inner">🕸</div>
+      </button>
     </div>
+
+    <!-- Pause Button -->
+    <div id="tc-pause" aria-label="Pause">⏸</div>
   </div>
 
   <!-- ──── ORIGINAL GAME ENGINE ──── -->
@@ -1306,37 +1409,73 @@
       const fsBtn = el('fs-btn');
       if (fsBtn) fsBtn.addEventListener('click', toggleFullscreen);
 
-      // \u2500\u2500 MOBILE TOUCH CONTROLS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-      function simulateKey(keyCode, type) {
+      // -- MOBILE TOUCH CONTROLS (Virtual Joystick + Action Buttons) --
+      function pressKey(keyCode) {
         if (!game || !game.scene || !game.scene.spiderman) return;
         const sp = game.scene.spiderman;
-        if (type === 'down') {
-          if (sp.keydowns.indexOf(keyCode) === -1) sp.keydowns.push(keyCode);
-          if (keyCode === 32) sp.addState('SHOOT');
-        } else {
-          while (sp.keydowns.indexOf(keyCode) > -1) sp.keydowns.splice(sp.keydowns.indexOf(keyCode), 1);
-          sp.keyup(keyCode);
-        }
+        if (sp.keydowns.indexOf(keyCode) === -1) sp.keydowns.push(keyCode);
+        if (keyCode === 32) sp.addState('SHOOT');
+      }
+      function releaseKey(keyCode) {
+        if (!game || !game.scene || !game.scene.spiderman) return;
+        game.scene.spiderman.keyup(keyCode);
       }
 
-      function addTouchBtn(id, keyCode) {
+      // Virtual Joystick
+      const joyZone = el('joy-zone');
+      const joyKnob = el('joy-knob');
+      const JOY_R = 80, DEAD = 18;
+      let joyActive = false, joyLeft = false, joyRight = false;
+
+      function joyMove(cx, cy) {
+        const rect = joyZone.getBoundingClientRect();
+        const dx = cx - (rect.left + JOY_R), dy = cy - (rect.top + JOY_R);
+        const clamp = Math.min(Math.sqrt(dx*dx+dy*dy), JOY_R-10);
+        const ang = Math.atan2(dy, dx);
+        joyKnob.style.transform = 'translate(calc(-50% + '+Math.cos(ang)*clamp+'px), calc(-50% + '+Math.sin(ang)*clamp+'px))';
+        joyKnob.classList.add('active');
+        const wasL = joyLeft, wasR = joyRight;
+        joyLeft = dx < -DEAD; joyRight = dx > DEAD;
+        if (joyLeft  && !wasL) pressKey(37);
+        if (!joyLeft && wasL)  releaseKey(37);
+        if (joyRight && !wasR) pressKey(39);
+        if (!joyRight && wasR) releaseKey(39);
+      }
+      function joyEnd() {
+        joyKnob.style.transform = 'translate(-50%, -50%)';
+        joyKnob.classList.remove('active');
+        if (joyLeft)  releaseKey(37);
+        if (joyRight) releaseKey(39);
+        joyLeft = false; joyRight = false;
+      }
+      if (joyZone) {
+        joyZone.addEventListener('touchstart',  function(e){ e.preventDefault(); joyActive=true; joyMove(e.changedTouches[0].clientX, e.changedTouches[0].clientY); }, {passive:false});
+        joyZone.addEventListener('touchmove',   function(e){ e.preventDefault(); if(joyActive) joyMove(e.changedTouches[0].clientX, e.changedTouches[0].clientY); }, {passive:false});
+        joyZone.addEventListener('touchend',    function(e){ e.preventDefault(); joyEnd(); }, {passive:false});
+        joyZone.addEventListener('touchcancel', function(e){ e.preventDefault(); joyEnd(); }, {passive:false});
+      }
+
+      // Action Buttons
+      function addActBtn(id, keyCode) {
         const btn = el(id);
         if (!btn) return;
-        const down = () => { btn.classList.add('pressed'); simulateKey(keyCode, 'down'); };
-        const up   = () => { btn.classList.remove('pressed'); simulateKey(keyCode, 'up'); };
-        btn.addEventListener('touchstart',  (e) => { e.preventDefault(); down(); }, { passive: false });
-        btn.addEventListener('touchend',    (e) => { e.preventDefault(); up(); },   { passive: false });
-        btn.addEventListener('touchcancel', (e) => { e.preventDefault(); up(); },   { passive: false });
-        // Also support mouse clicks for desktop testing
-        btn.addEventListener('mousedown',  down);
-        btn.addEventListener('mouseup',    up);
-        btn.addEventListener('mouseleave', up);
+        const down = function(){ btn.classList.add('pressed'); pressKey(keyCode); };
+        const up   = function(){ btn.classList.remove('pressed'); releaseKey(keyCode); };
+        btn.addEventListener('touchstart',  function(e){ e.preventDefault(); down(); }, {passive:false});
+        btn.addEventListener('touchend',    function(e){ e.preventDefault(); up(); },   {passive:false});
+        btn.addEventListener('touchcancel', function(e){ e.preventDefault(); up(); },   {passive:false});
+        btn.addEventListener('mousedown', down);
+        btn.addEventListener('mouseup',   up);
+        btn.addEventListener('mouseleave',up);
       }
+      addActBtn('tc-jump',  38);
+      addActBtn('tc-shoot', 32);
 
-      addTouchBtn('tc-left',  37); // ARROW_LEFT
-      addTouchBtn('tc-right', 39); // ARROW_RIGHT
-      addTouchBtn('tc-jump',  38); // ARROW_UP
-      addTouchBtn('tc-shoot', 32); // SPACEBAR
+      var pauseBtn = el('tc-pause');
+      if (pauseBtn) {
+        pauseBtn.addEventListener('touchstart', function(e){ e.preventDefault(); if(game) game.paused=!game.paused; }, {passive:false});
+        pauseBtn.addEventListener('click', function(){ if(game) game.paused=!game.paused; });
+      }
 
       if (!SAVE.photoDismissed) {
         show('photo-notice');
