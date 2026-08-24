@@ -1,4 +1,4 @@
-(function(window, document) {
+import { PhysicsEngine } from './src/engine/physics.js';
 
 // change this to relative path (relative to script) or to absolute path
 // where the audio, fonts and images folders are located
@@ -669,6 +669,7 @@ function SpiderMan(game) {
 	this.maxHealth = 5;
 
 	this.web = 100;
+	this.webState = { anchor: null, ropeLength: 0, theta: 0, angularVelocity: 0, attached: false };
 
 	this.velocityX = 0;
 	this.velocityY = 0;
@@ -913,6 +914,37 @@ SpiderMan.prototype.update = function() {
 	}
 	if (this.keyIsDown(KEY.SPACEBAR)) {
 		this.addState("SHOOT");
+		if (!this.webState.attached && this.web > 0 && (this.hasState("FALL") || this.hasState("JUMP"))) {
+			var anchors = [];
+			for (var i = 0; i < this.game.scene.roofs.length; i++) {
+				var r = this.game.scene.roofs[i];
+				anchors.push({x: r.x, y: r.y + r.height});
+				anchors.push({x: r.x + r.fullWidth, y: r.y + r.height});
+				anchors.push({x: r.x, y: r.y});
+				anchors.push({x: r.x + r.fullWidth, y: r.y});
+			}
+			
+			var dir = (this.runningDirection === -1) ? -1 : 1;
+			var aimWorldPos = {x: this.x + dir * 200, y: this.y - 300};
+			var bestAnchor = PhysicsEngine.findBestAnchor({x: this.x, y: this.y}, aimWorldPos, anchors, false);
+			
+			if (bestAnchor) {
+				this.webState.attached = true;
+				this.webState.anchor = bestAnchor;
+				
+				var dx = this.x - bestAnchor.x;
+				var dy = this.y - bestAnchor.y;
+				this.webState.ropeLength = Math.max(120, Math.sqrt(dx*dx + dy*dy));
+				this.webState.theta = Math.atan2(dx, dy);
+				
+				var vt = this.velocityX * Math.cos(this.webState.theta) - this.velocityY * Math.sin(this.webState.theta);
+				this.webState.angularVelocity = vt / this.webState.ropeLength;
+				
+				this.web--;
+			}
+		}
+	} else {
+		this.webState.attached = false;
 	}
 
 	if (this.y >= this.canvas.height || !this.health || !this.web) {
@@ -921,10 +953,25 @@ SpiderMan.prototype.update = function() {
 
 	var img = this.stateImage();
 
-	this.velocityY += this.gravityForce;
-
-	this.y += this.velocityY;
-	this.x += this.velocityX;
+	var dt = 1/60; // Assuming 60fps for now
+	
+	if (this.webState.attached) {
+		var pumpDirection = 0;
+		if (this.keyIsDown(KEY.ARROW_RIGHT) || this.keyIsDown(KEY.D)) pumpDirection = 1;
+		if (this.keyIsDown(KEY.ARROW_LEFT) || this.keyIsDown(KEY.A)) pumpDirection = -1;
+		PhysicsEngine.updatePendulumSwing(this, dt, pumpDirection);
+		
+		// Unattach if jump is pressed or web is empty
+		if ((this.keyIsDown(KEY.ARROW_UP) || this.keyIsDown(KEY.W)) || this.web <= 0) {
+			this.webState.attached = false;
+			this.addState("JUMP");
+			// Disconnect boost based on tangential velocity already captured in velocityX/Y
+			this.velocityY = -10; 
+		}
+	} else {
+		PhysicsEngine.updateFreeFall(this, dt);
+		if (this.velocityY > 0) this.addState("FALL");
+	}
 
 	if (this.x - this.game.cameraX < 0) {
 		this.x = this.game.cameraX; // dont allow going left
@@ -1282,5 +1329,3 @@ window.Projectile    = Projectile;
 window.SpiderMan     = SpiderMan;
 window.Enemy         = Enemy;
 window.Roof          = Roof;
-
-})(window, document);
