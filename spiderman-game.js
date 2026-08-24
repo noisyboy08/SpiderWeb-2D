@@ -914,37 +914,33 @@ SpiderMan.prototype.update = function() {
 	}
 	if (this.keyIsDown(KEY.SPACEBAR)) {
 		this.addState("SHOOT");
+		// Try to attach a web anchor when in the air (only once per press)
 		if (!this.webState.attached && this.web > 0 && (this.hasState("FALL") || this.hasState("JUMP"))) {
 			var anchors = [];
 			for (var i = 0; i < this.game.scene.roofs.length; i++) {
 				var r = this.game.scene.roofs[i];
-				anchors.push({x: r.x, y: r.y + r.height});
-				anchors.push({x: r.x + r.fullWidth, y: r.y + r.height});
-				anchors.push({x: r.x, y: r.y});
-				anchors.push({x: r.x + r.fullWidth, y: r.y});
+				// Use the top edge of every roof as anchor points
+				anchors.push({ x: r.x, y: r.y });
+				anchors.push({ x: r.x + r.fullWidth / 2, y: r.y });
+				anchors.push({ x: r.x + r.fullWidth, y: r.y });
 			}
-			
 			var dir = (this.runningDirection === -1) ? -1 : 1;
-			var aimWorldPos = {x: this.x + dir * 200, y: this.y - 300};
-			var bestAnchor = PhysicsEngine.findBestAnchor({x: this.x, y: this.y}, aimWorldPos, anchors, false);
-			
+			var aimWorldPos = { x: this.x + dir * 300, y: this.y - 250 };
+			var bestAnchor = PhysicsEngine.findBestAnchor({ x: this.x, y: this.y }, aimWorldPos, anchors, false);
 			if (bestAnchor) {
 				this.webState.attached = true;
 				this.webState.anchor = bestAnchor;
-				
 				var dx = this.x - bestAnchor.x;
 				var dy = this.y - bestAnchor.y;
-				this.webState.ropeLength = Math.max(120, Math.sqrt(dx*dx + dy*dy));
+				this.webState.ropeLength = Math.max(150, Math.sqrt(dx * dx + dy * dy));
 				this.webState.theta = Math.atan2(dx, dy);
-				
-				var vt = this.velocityX * Math.cos(this.webState.theta) - this.velocityY * Math.sin(this.webState.theta);
+				// Convert frame-based velocity to angular velocity
+				var vt = (this.velocityX * 60) * Math.cos(this.webState.theta) - (this.velocityY * 60) * Math.sin(this.webState.theta);
 				this.webState.angularVelocity = vt / this.webState.ropeLength;
-				
 				this.web--;
 			}
 		}
-	} else {
-		this.webState.attached = false;
+		// Detach when space released is handled in keyup — NOT here
 	}
 
 	if (this.y >= this.canvas.height || !this.health || !this.web) {
@@ -953,24 +949,27 @@ SpiderMan.prototype.update = function() {
 
 	var img = this.stateImage();
 
-	var dt = 1/60; // Assuming 60fps for now
-	
 	if (this.webState.attached) {
-		var pumpDirection = 0;
-		if (this.keyIsDown(KEY.ARROW_RIGHT) || this.keyIsDown(KEY.D)) pumpDirection = 1;
-		if (this.keyIsDown(KEY.ARROW_LEFT) || this.keyIsDown(KEY.A)) pumpDirection = -1;
-		PhysicsEngine.updatePendulumSwing(this, dt, pumpDirection);
-		
-		// Unattach if jump is pressed or web is empty
-		if ((this.keyIsDown(KEY.ARROW_UP) || this.keyIsDown(KEY.W)) || this.web <= 0) {
+		// PENDULUM SWING - PhysicsEngine uses SI units (px/s)
+		var dt = 1 / 60;
+		var pumpDir = 0;
+		if (this.keyIsDown(KEY.ARROW_RIGHT) || this.keyIsDown(KEY.D)) pumpDir = 1;
+		if (this.keyIsDown(KEY.ARROW_LEFT) || this.keyIsDown(KEY.A)) pumpDir = -1;
+		PhysicsEngine.updatePendulumSwing(this, dt, pumpDir);
+		// PhysicsEngine sets this.x, this.y in world coords and velocityX/Y in SI px/s.
+		// Convert velocities back to frame-scale so collision code works.
+		this.velocityX = this.velocityX * dt;
+		this.velocityY = this.velocityY * dt;
+		// Detach if up/W pressed while swinging
+		if (this.keyIsDown(KEY.ARROW_UP) || this.keyIsDown(KEY.W)) {
 			this.webState.attached = false;
-			this.addState("JUMP");
-			// Disconnect boost based on tangential velocity already captured in velocityX/Y
-			this.velocityY = -10; 
+			this.addState("FALL");
 		}
 	} else {
-		PhysicsEngine.updateFreeFall(this, dt);
-		if (this.velocityY > 0) this.addState("FALL");
+		// ORIGINAL FRAME-BASED PHYSICS (gravity + position update)
+		this.velocityY += this.gravityForce;
+		this.y += this.velocityY;
+		this.x += this.velocityX;
 	}
 
 	if (this.x - this.game.cameraX < 0) {
