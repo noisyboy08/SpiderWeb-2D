@@ -301,8 +301,6 @@ Access the cheat code screen via:
 
 Type the code in the input field and press **ACTIVATE CHEAT ▶** (or hit `Enter`).
 
----
-
 ### 🌟 Master Codes (Unlock Everything)
 
 These three codes are identical in effect — they unlock **all 12 levels**, mark every level as completed, and unlock **Spidergirl**:
@@ -312,8 +310,6 @@ These three codes are identical in effect — they unlock **all 12 levels**, mar
 | `UNLOCKALL` | ✨ Unlocks all 12 levels + Spidergirl instantly |
 | `GODMODE` | ✨ Same as UNLOCKALL — full game access |
 | `CHEATPASS` | ✨ Same as UNLOCKALL — full game access |
-
----
 
 ### 🗺️ Level-Specific Skip Codes
 
@@ -336,7 +332,6 @@ Each level has **3 unique codes** — any of them will skip directly to that lev
 
 > **Note:** Codes are **NOT** case-sensitive — `level1`, `LEVEL1`, and `Level1` all work. Level-specific codes **unlock the target level and all levels before it** in your save, so you never lose progress.
 
----
 
 ## 👤 Characters
 
