@@ -353,6 +353,48 @@
       transform: translateY(-2px);
     }
     .spiderman-game-menu-button:active { transform: translateY(1px); }
+
+    /* ──────────── MOBILE TOUCH CONTROLS ──────────── */
+    #touch-controls {
+      display: none;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      z-index: 9100;
+      padding: 12px 20px 20px;
+      pointer-events: none;
+      user-select: none;
+    }
+    @media (hover: none) and (pointer: coarse) {
+      #touch-controls { display: flex; justify-content: space-between; align-items: flex-end; }
+    }
+    .tc-left, .tc-right { display: flex; gap: 10px; pointer-events: all; }
+    .tc-btn {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      border: 2px solid rgba(0, 194, 255, 0.7);
+      background: rgba(8, 21, 36, 0.75);
+      color: #00C2FF;
+      font-size: 22px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(6px);
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      transition: background 0.1s;
+    }
+    .tc-btn:active, .tc-btn.pressed {
+      background: rgba(0, 194, 255, 0.35);
+      border-color: #00F2FE;
+      box-shadow: 0 0 18px rgba(0, 194, 255, 0.6);
+    }
+    .tc-shoot {
+      width: 72px; height: 72px;
+      background: rgba(255, 61, 138, 0.2);
+      border-color: rgba(255, 61, 138, 0.7);
+      color: #FF3D8A;
+      font-size: 18px;
+      border-radius: 50%;
+    }
+    .tc-shoot.pressed { background: rgba(255, 61, 138, 0.45); }
   </style>
 </head>
 <body>
@@ -518,6 +560,18 @@
   <!-- ──── CANVAS ──── -->
   <div id="game-container">
     <canvas id="canvas" width="1280" height="720"></canvas>
+  </div>
+
+  <!-- ──── MOBILE TOUCH CONTROLS ──── -->
+  <div id="touch-controls">
+    <div class="tc-left">
+      <button class="tc-btn" id="tc-left" aria-label="Move Left">◀</button>
+      <button class="tc-btn" id="tc-right" aria-label="Move Right">▶</button>
+    </div>
+    <div class="tc-right">
+      <button class="tc-btn tc-shoot" id="tc-shoot" aria-label="Shoot Web">🕸</button>
+      <button class="tc-btn" id="tc-jump" aria-label="Jump">▲</button>
+    </div>
   </div>
 
   <!-- ──── ORIGINAL GAME ENGINE ──── -->
@@ -826,6 +880,21 @@
     });
 
     // ── START LEVEL ─────────────────────────────────
+    const LEVEL_DEFINITIONS_MAP = {
+      1:  { worldLength: 4000,  buildingGapRange: [150, 220], buildingHeightRange: [220, 520] },
+      2:  { worldLength: 4500,  buildingGapRange: [170, 240], buildingHeightRange: [240, 500] },
+      3:  { worldLength: 5000,  buildingGapRange: [160, 230], buildingHeightRange: [220, 530] },
+      4:  { worldLength: 5200,  buildingGapRange: [170, 240], buildingHeightRange: [250, 520] },
+      5:  { worldLength: 5500,  buildingGapRange: [180, 250], buildingHeightRange: [240, 540] },
+      6:  { worldLength: 2500,  buildingGapRange: [100, 150], buildingHeightRange: [300, 450] },
+      7:  { worldLength: 5800,  buildingGapRange: [190, 260], buildingHeightRange: [250, 550] },
+      8:  { worldLength: 6000,  buildingGapRange: [200, 270], buildingHeightRange: [260, 560] },
+      9:  { worldLength: 6200,  buildingGapRange: [200, 280], buildingHeightRange: [250, 570] },
+      10: { worldLength: 2500,  buildingGapRange: [120, 160], buildingHeightRange: [300, 450] },
+      11: { worldLength: 6500,  buildingGapRange: [210, 290], buildingHeightRange: [260, 580] },
+      12: { worldLength: 3000,  buildingGapRange: [100, 150], buildingHeightRange: [320, 460] },
+    };
+
     function startLevel(id) {
       selectedLevelId = id;
       window.__swOverlayActive = false;
@@ -835,16 +904,21 @@
 
       // Speed scaling per level (Level 1: 1.0x -> Level 12: 1.88x)
       const speedMult = 1.0 + (id - 1) * 0.08;
+      const levelCfg = LEVEL_DEFINITIONS_MAP[id] || null;
 
       // Init game if not already
       if (!game) {
         game = new SpidermanGame({ canvas: '#canvas' });
         game.speedMultiplier = speedMult;
+        game.activeLevelId = id;
+        game.levelConfig = levelCfg;
         game.load();
         window.game = game;
         patchGameCallbacks();
       } else {
         game.speedMultiplier = speedMult;
+        game.activeLevelId = id;
+        game.levelConfig = levelCfg;
         game.restart();
       }
 
@@ -946,6 +1020,36 @@
       hide('death-overlay');
       window.__swOverlayActive = false;
       openCheatModal('death-overlay');
+    });
+
+    // ── LIVE HUD UPDATES FROM GAME ENGINE ──────────────
+    window.addEventListener('SPIDERWORLD_HPUPDATE', (e) => {
+      const { hp, maxHp } = e.detail;
+      const pct = maxHp > 0 ? Math.max(0, (hp / maxHp) * 100) : 0;
+      el('hp-bar-fill').style.width = pct + '%';
+      if (pct <= 25) el('hp-bar-fill').style.background = 'linear-gradient(90deg,#FF3D8A,#C42060)';
+      else if (pct <= 60) el('hp-bar-fill').style.background = 'linear-gradient(90deg,#FFD700,#FF8C00)';
+      else el('hp-bar-fill').style.background = 'linear-gradient(90deg,#00C2FF,#0082C8)';
+    });
+
+    window.addEventListener('SPIDERWORLD_PROGRESS', (e) => {
+      el('level-progress').textContent = 'DIST: ' + e.detail.dist + 'm';
+    });
+
+    // ── LEVEL COMPLETE ─────────────────────────────────
+    window.addEventListener('SPIDERWORLD_LEVELCOMPLETE', (e) => {
+      const id = e.detail.levelId || selectedLevelId;
+      const elapsedMs = Date.now() - levelStartMs;
+      const isFlawless = !playerTookDamage;
+
+      // Save the result
+      saveLevelComplete(id, elapsedMs, isFlawless);
+
+      // Show news card transition
+      const newsIdx = Math.min(id - 1, NEWS_CARDS.length - 1);
+      el('news-text').textContent = NEWS_CARDS[newsIdx];
+      el('hud').style.display = 'none';
+      show('news-card');
     });
 
     // ── CHEAT CODES SYSTEM ─────────────────────────
@@ -1201,6 +1305,38 @@
 
       const fsBtn = el('fs-btn');
       if (fsBtn) fsBtn.addEventListener('click', toggleFullscreen);
+
+      // \u2500\u2500 MOBILE TOUCH CONTROLS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+      function simulateKey(keyCode, type) {
+        if (!game || !game.scene || !game.scene.spiderman) return;
+        const sp = game.scene.spiderman;
+        if (type === 'down') {
+          if (sp.keydowns.indexOf(keyCode) === -1) sp.keydowns.push(keyCode);
+          if (keyCode === 32) sp.addState('SHOOT');
+        } else {
+          while (sp.keydowns.indexOf(keyCode) > -1) sp.keydowns.splice(sp.keydowns.indexOf(keyCode), 1);
+          sp.keyup(keyCode);
+        }
+      }
+
+      function addTouchBtn(id, keyCode) {
+        const btn = el(id);
+        if (!btn) return;
+        const down = () => { btn.classList.add('pressed'); simulateKey(keyCode, 'down'); };
+        const up   = () => { btn.classList.remove('pressed'); simulateKey(keyCode, 'up'); };
+        btn.addEventListener('touchstart',  (e) => { e.preventDefault(); down(); }, { passive: false });
+        btn.addEventListener('touchend',    (e) => { e.preventDefault(); up(); },   { passive: false });
+        btn.addEventListener('touchcancel', (e) => { e.preventDefault(); up(); },   { passive: false });
+        // Also support mouse clicks for desktop testing
+        btn.addEventListener('mousedown',  down);
+        btn.addEventListener('mouseup',    up);
+        btn.addEventListener('mouseleave', up);
+      }
+
+      addTouchBtn('tc-left',  37); // ARROW_LEFT
+      addTouchBtn('tc-right', 39); // ARROW_RIGHT
+      addTouchBtn('tc-jump',  38); // ARROW_UP
+      addTouchBtn('tc-shoot', 32); // SPACEBAR
 
       if (!SAVE.photoDismissed) {
         show('photo-notice');

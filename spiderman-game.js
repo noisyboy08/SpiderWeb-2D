@@ -104,12 +104,18 @@ function SpidermanGame(opts) {
 	this.cameraX = 0;
 	this.score = this.score || 0;
 
+	// Level config — set by startLevel() before restart()
+	this.levelConfig = null;
+	this.levelWorldLength = Infinity; // default: endless
+	this.worldProgress = 0;           // cumulative distance player has moved right
+	this.levelCompleted = false;
+
 	this.scene = {
 		spiderman: null,
 		projectiles: [],
 		roofs: [],
 		enemies: [],
-	}; // object that contains information about the next scene
+	};
 }
 
 SpidermanGame.prototype.paused             = false;
@@ -464,9 +470,12 @@ SpidermanGame.prototype.drawRoofs = function() {
 	// if roof left the frame and was removed, add another one
 	if (roofs.length < 3) {
 		var lastRoof = roofs[roofs.length - 1];
-		var x = lastRoof.x + lastRoof.fullWidth + Math.round(Math.random() * 50) + 100;
+		var gapMin = (this.levelConfig && this.levelConfig.buildingGapRange) ? this.levelConfig.buildingGapRange[0] : 100;
+		var gapMax = (this.levelConfig && this.levelConfig.buildingGapRange) ? this.levelConfig.buildingGapRange[1] : 150;
+		var gap = Math.round(Math.random() * (gapMax - gapMin)) + gapMin;
+		var x = lastRoof.x + lastRoof.fullWidth + gap;
 
-		var roof = new Roof(this, x);
+		var roof = new Roof(this, x, this.levelConfig);
 		this.addRoof(roof);
 		roofs[0].update();
 	}
@@ -503,6 +512,26 @@ SpidermanGame.prototype.update = function() {
 		}
 
 		spiderman.update();
+
+		// Track world progress (cumulative rightward movement)
+		if (spiderman.velocityX > 0) this.worldProgress += spiderman.velocityX;
+
+		// Update HUD HP bar via custom event
+		window.dispatchEvent(new CustomEvent('SPIDERWORLD_HPUPDATE', {
+			detail: { hp: spiderman.health, maxHp: spiderman.maxHealth }
+		}));
+		// Update HUD distance
+		window.dispatchEvent(new CustomEvent('SPIDERWORLD_PROGRESS', {
+			detail: { dist: Math.floor(this.cameraX / 10) }
+		}));
+
+		// Check level completion
+		if (!this.levelCompleted && this.worldProgress >= this.levelWorldLength) {
+			this.levelCompleted = true;
+			window.dispatchEvent(new CustomEvent('SPIDERWORLD_LEVELCOMPLETE', {
+				detail: { levelId: this.activeLevelId || 1 }
+			}));
+		}
 
 		for (var i = 0; i < projectiles.length; i++) {
 			var projectile = projectiles[i];
@@ -622,8 +651,16 @@ SpidermanGame.prototype.restart = function() {
 	// Kill the current animation loop by advancing the generation
 	this._loopGen = (this._loopGen || 0) + 1;
 
-	var roof = new Roof(this);
-	roof.x = 0;
+	// Apply level config if provided
+	if (this.levelConfig) {
+		this.levelWorldLength = this.levelConfig.worldLength || Infinity;
+	} else {
+		this.levelWorldLength = Infinity;
+	}
+	this.worldProgress = 0;
+	this.levelCompleted = false;
+
+	var roof = new Roof(this, 0, this.levelConfig);
 
 	this.spiderman = new SpiderMan(this);
 	this.scene.spiderman = this.spiderman;
@@ -995,19 +1032,64 @@ SpiderMan.prototype.update = function() {
 		// we'll just check if spider's y is INSIDE the wall just because of the velocityY
 		// just to make sure that spider is actually on the roof
 		if (roof.y + this.velocityY <= this.y) {
-			this.x -= this.velocityX;
-			this.velocityX = 0;
+			// Hit a wall — wall-kick if UP/W is pressed
+			var hitWall = true;
+			if ((this.keyIsDown(KEY.ARROW_UP) || this.keyIsDown(KEY.W)) && this.hasState("FALL")) {
+				var kickDir = (this.runningDirection === DIRECTION.LEFT) ? 1 : -1;
+				this.velocityX = kickDir * 8;
+				this.velocityY = -14;
+				this.runningDirection = kickDir;
+				this.addState("FALL");
+				this.webState.attached = false;
+			} else {
+				this.x -= this.velocityX;
+				this.velocityX = 0;
+			}
 		} else {
 			this.y = this.canvas.height - roof.height - img.height * this.scale;
 			this.velocityY = 0;
+			this.velocityX = this.hasState("RUNNING") ? this.velocityX : 0;
 			this.removeState("FALL");
+			this.webState.attached = false;
 		}
+	} else if (!this.webState.attached) {
+		// In the air but not swinging — add FALL state when moving downward
+		if (this.velocityY > 0) this.addState("FALL");
 	}
 
 	var x = this.x - this.game.cameraX;
 	var y = this.y;
 	var width = img.width * this.scale;
 	var height = img.height * this.scale;
+
+	// Draw web rope when swinging
+	if (this.webState.attached && this.webState.anchor) {
+		var anchorScreenX = this.webState.anchor.x - this.game.cameraX;
+		var anchorScreenY = this.webState.anchor.y;
+		var playerCenterX = x + width / 2;
+		var playerCenterY = y + height * 0.2; // attach from upper body
+
+		// Draw the rope itself
+		this.ctx.save();
+		this.ctx.beginPath();
+		this.ctx.moveTo(playerCenterX, playerCenterY);
+		this.ctx.lineTo(anchorScreenX, anchorScreenY);
+		this.ctx.strokeStyle = 'rgba(200, 230, 255, 0.85)';
+		this.ctx.lineWidth = 2;
+		this.ctx.setLineDash([6, 3]);
+		this.ctx.stroke();
+		this.ctx.setLineDash([]);
+
+		// Draw anchor grapple point
+		this.ctx.beginPath();
+		this.ctx.arc(anchorScreenX, anchorScreenY, 5, 0, Math.PI * 2);
+		this.ctx.fillStyle = '#00F2FE';
+		this.ctx.fill();
+		this.ctx.strokeStyle = 'white';
+		this.ctx.lineWidth = 1.5;
+		this.ctx.stroke();
+		this.ctx.restore();
+	}
 
 	this.ctx.save();
 	this.drawCharacterSprite(this.ctx, x, y, width, height, img);
@@ -1166,19 +1248,25 @@ Projectile.prototype.handleHitWithCharacter = function() {
 	this.remove();
 }
 
-function Roof(game, x, y) {
+function Roof(game, x, levelConfig) {
 	this.game = game;
 	this.canvas = game.canvas;
 	this.ctx = game.ctx;
 
-	this.width = Math.round(Math.random() * (this.game.resources.BUILDING.width - 200)) + 200;
-	this.height = Math.round(Math.random() * 50) + 100;
+	// Use level config ranges if provided, else sensible defaults
+	var minH = (levelConfig && levelConfig.buildingHeightRange) ? levelConfig.buildingHeightRange[0] : 100;
+	var maxH = (levelConfig && levelConfig.buildingHeightRange) ? levelConfig.buildingHeightRange[1] : 150;
+	var heightRange = maxH - minH;
+
+	var maxBuildingW = this.game.resources.BUILDING.width;
+	this.width = Math.round(Math.random() * (maxBuildingW - 200)) + 200;
+	this.height = Math.round(Math.random() * heightRange) + minH;
 	this.fullWidth = this.width + 15; // 15 pixels for right end of the roof top
 
 	this.x = x || 0;
 	this.y = this.canvas.height - this.height;
 
-	// 70% chance?
+	// 70% chance to spawn an enemy on this roof
 	var shouldSpawnEnemy = Math.round(Math.random() * 100) >= 30;
 	if (shouldSpawnEnemy) {
 		var enemy = new Enemy(this.game, {
