@@ -792,7 +792,17 @@
 
     el('btn-settings-close').addEventListener('click', () => {
       hide('settings-modal');
-      if (settingsCaller) { show(settingsCaller); settingsCaller = null; }
+      if (settingsCaller === 'mission-tracker') {
+        showMissionTracker();
+      } else if (settingsCaller === 'death-overlay') {
+        window.__swOverlayActive = true;
+        show('death-overlay');
+      } else if (settingsCaller === 'title-screen') {
+        showTitle();
+      } else if (settingsCaller) {
+        show(settingsCaller);
+      }
+      settingsCaller = null;
     });
 
     // ── PHOTO NOTICE ───────────────────────────────
@@ -1095,7 +1105,7 @@
       show('death-overlay');
     });
 
-    window.addEventListener('SPIDERWORLD_RETRY', () => {
+    el('btn-retry').addEventListener('click', () => {
       hide('death-overlay');
       window.__swOverlayActive = false;
       el('hud').style.display = 'block';
@@ -1110,20 +1120,20 @@
       playerTookDamage = false;
     });
 
-    window.addEventListener('SPIDERWORLD_TRACKER', () => {
+    el('btn-tracker-from-death').addEventListener('click', () => {
       hide('death-overlay');
       window.__swOverlayActive = false;
       if (game) { game.gameIsOver = false; game.gameoverMenu.style.display = 'none'; }
       showMissionTracker();
     });
 
-    window.addEventListener('SPIDERWORLD_SETTINGS', () => {
+    el('btn-settings-from-death').addEventListener('click', () => {
       hide('death-overlay');
       window.__swOverlayActive = false;
       openSettings('death-overlay');
     });
 
-    window.addEventListener('SPIDERWORLD_CHEAT', () => {
+    el('btn-cheat-from-death').addEventListener('click', () => {
       hide('death-overlay');
       window.__swOverlayActive = false;
       openCheatModal('death-overlay');
@@ -1281,26 +1291,14 @@
       el('level-progress').textContent = `DIST: ${distM}m`;
     }, 100);
 
-    // ── DEATH OVERLAY BUTTONS (delegate to events for consistency) ────────────
-    el('btn-retry').addEventListener('click', () => {
-      window.dispatchEvent(new CustomEvent('SPIDERWORLD_RETRY'));
-    });
-
-    el('btn-tracker-from-death').addEventListener('click', () => {
-      window.dispatchEvent(new CustomEvent('SPIDERWORLD_TRACKER'));
-    });
-
-    el('btn-cheat-from-death').addEventListener('click', () => {
-      window.dispatchEvent(new CustomEvent('SPIDERWORLD_CHEAT'));
-    });
-
-    el('btn-settings-from-death').addEventListener('click', () => {
-      window.dispatchEvent(new CustomEvent('SPIDERWORLD_SETTINGS'));
-    });
-
     el('btn-cheat-tracker').addEventListener('click', () => {
       hide('mission-tracker');
       openCheatModal('mission-tracker');
+    });
+
+    el('btn-tracker-settings').addEventListener('click', () => {
+      hide('mission-tracker');
+      openSettings('mission-tracker');
     });
 
     // ── NEWS CARD ─────────────────────────────────────
