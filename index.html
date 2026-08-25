@@ -1153,11 +1153,11 @@
       saveLevelComplete(id, elapsedMs, isFlawless);
 
       // Show news card transition
-      const newsIdx = Math.min(id - 1, NEWS_CARDS.length - 1);
-      el('news-text').textContent = NEWS_CARDS[newsIdx];
       if (el('touch-controls')) el('touch-controls').style.display = 'none';
       el('hud').style.display = 'none';
-      show('news-card');
+      showNewsCard(id, function() {
+        showMissionTracker();
+      });
     });
 
     // ── CHEAT CODES SYSTEM ─────────────────────────
