@@ -1025,7 +1025,7 @@ SpiderMan.prototype.update = function() {
 		// Detach when space released is handled in keyup — NOT here
 	}
 
-	if (this.y >= this.canvas.height || !this.health || !this.web) {
+	if (this.y >= this.canvas.height + 200 || !this.health) {
 		this.game.gameover();
 	}
 

@@ -514,6 +514,7 @@
       <div class="sw-logo">SPIDER<br>WORLD</div>
       <div class="sw-tagline">Web-Swinging Action Platformer · Jax Steele Returns</div>
       <button class="sw-btn" id="btn-start">▶ START GAME</button>
+      <button class="sw-btn secondary" id="btn-help-title">❓ HOW TO PLAY</button>
       <button class="sw-btn secondary" id="btn-settings-title">⚙ SETTINGS</button>
     </div>
   </div>
@@ -619,6 +620,40 @@
     </div>
   </div>
 
+  <!-- ──── HOW TO PLAY MODAL ──── -->
+  <div id="help-modal" class="sw-overlay" style="display:none; z-index:10000;">
+    <div class="sw-panel" style="min-width:440px; text-align:left; max-height:80vh; overflow-y:auto;">
+      <h2 style="font-family:'Press Start 2P',monospace;font-size:14px;color:#00C2FF;margin-bottom:20px;text-align:center;">❓ HOW TO PLAY</h2>
+      <div style="font-family:'Press Start 2P',monospace;font-size:9px;color:#B0C4D8;line-height:2;">
+        <div style="color:#00C2FF;font-size:10px;margin-bottom:8px;">🎮 MOVEMENT</div>
+        <div>← / A &nbsp;&nbsp; Move Left</div>
+        <div>→ / D &nbsp;&nbsp; Move Right</div>
+        <div>↑ / W &nbsp;&nbsp; Jump</div>
+        <br>
+        <div style="color:#00C2FF;font-size:10px;margin-bottom:8px;">🕷️ WEB ACTIONS</div>
+        <div>SPACE &nbsp;&nbsp;&nbsp;&nbsp; Swing Web (in air)</div>
+        <div>X &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Shoot Web at enemies</div>
+        <br>
+        <div style="color:#00C2FF;font-size:10px;margin-bottom:8px;">📱 MOBILE CONTROLS</div>
+        <div>Left Stick &nbsp; Move Left / Right</div>
+        <div>▲ Button &nbsp;&nbsp;&nbsp; Jump</div>
+        <div>🔗 Button &nbsp;&nbsp;&nbsp; Swing Web</div>
+        <div>🕸 Button &nbsp;&nbsp;&nbsp; Shoot Web</div>
+        <br>
+        <div style="color:#00C2FF;font-size:10px;margin-bottom:8px;">⚙ SYSTEM</div>
+        <div>ESC &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Pause Game</div>
+        <div>F &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Toggle Fullscreen</div>
+        <br>
+        <div style="color:#FFD700;font-size:10px;margin-bottom:8px;">💡 TIPS</div>
+        <div>• Swing to gain speed, then jump!</div>
+        <div>• Shoot webs to stun enemies</div>
+        <div>• Defeat enemies to refill web ammo</div>
+        <div>• Reach the end of each level to win</div>
+      </div>
+      <button class="sw-btn" id="btn-help-close" style="margin-top:24px;width:100%;">CLOSE ✕</button>
+    </div>
+  </div>
+
   <!-- ──── DEATH OVERLAY ──── -->
   <div id="death-overlay" class="sw-overlay" style="display:none;">
     <div class="sw-panel">
@@ -628,6 +663,7 @@
       <button class="sw-btn" id="btn-retry">🔄 RETRY</button>
       <button class="sw-btn secondary" id="btn-tracker-from-death">📡 MISSION TRACKER</button>
       <button class="sw-btn secondary" id="btn-cheat-from-death">🔑 CHEAT CODE</button>
+      <button class="sw-btn secondary" id="btn-help-from-death">❓ HOW TO PLAY</button>
       <button class="sw-btn secondary" id="btn-settings-from-death">⚙ SETTINGS</button>
     </div>
   </div>
@@ -759,6 +795,28 @@
     function show(id) { const e = el(id); if (e) e.style.display = 'flex'; }
     function hide(id) { const e = el(id); if (e) e.style.display = 'none'; }
 
+    // ── HOW TO PLAY ────────────────────────────────
+    let helpCaller = null;
+    function openHelp(caller) {
+      helpCaller = caller;
+      show('help-modal');
+    }
+
+    el('btn-help-close').addEventListener('click', () => {
+      hide('help-modal');
+      if (helpCaller === 'mission-tracker') {
+        showMissionTracker();
+      } else if (helpCaller === 'death-overlay') {
+        window.__swOverlayActive = true;
+        show('death-overlay');
+      } else if (helpCaller === 'title-screen') {
+        showTitle();
+      } else if (helpCaller) {
+        show(helpCaller);
+      }
+      helpCaller = null;
+    });
+
     // ── SETTINGS ───────────────────────────────────
     function applySettingsToggles() {
       ['flash','shake','sfx','music'].forEach(k => {
@@ -830,6 +888,11 @@
       openSettings('title-screen');
     });
 
+    el('btn-help-title').addEventListener('click', () => {
+      hide('title-screen');
+      openHelp('title-screen');
+    });
+
     // ── MISSION TRACKER ─────────────────────────────
     function showMissionTracker() {
       hide('death-overlay');
@@ -837,6 +900,7 @@
       hide('unlock-screen');
       hide('cheat-modal');
       hide('settings-modal');
+      hide('help-modal');
       hide('title-screen');
 
       window.__swOverlayActive = true;
@@ -1137,6 +1201,11 @@
       hide('death-overlay');
       window.__swOverlayActive = false;
       openCheatModal('death-overlay');
+    });
+
+    el('btn-help-from-death').addEventListener('click', () => {
+      hide('death-overlay');
+      openHelp('death-overlay');
     });
 
     // ── LIVE HUD UPDATES FROM GAME ENGINE ──────────────
