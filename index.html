@@ -631,14 +631,11 @@
         <div>↑ / W &nbsp;&nbsp; Jump</div>
         <br>
         <div style="color:#00C2FF;font-size:10px;margin-bottom:8px;">🕷️ WEB ACTIONS</div>
-        <div>SPACE (ground) — Shoot Web at enemies</div>
-        <div>SPACE (in air) — Swing Web to buildings</div>
-        <div>X key &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Shoot Web (alternate)</div>
+        <div>SPACE / X &nbsp;&nbsp; Shoot Web at enemies</div>
         <br>
         <div style="color:#00C2FF;font-size:10px;margin-bottom:8px;">📱 MOBILE CONTROLS</div>
         <div>Left Stick &nbsp; Move Left / Right</div>
         <div>▲ Button &nbsp;&nbsp;&nbsp; Jump</div>
-        <div>🔗 Button &nbsp;&nbsp;&nbsp; Swing Web</div>
         <div>🕸 Button &nbsp;&nbsp;&nbsp; Shoot Web</div>
         <br>
         <div style="color:#00C2FF;font-size:10px;margin-bottom:8px;">⚙ SYSTEM</div>
@@ -646,10 +643,10 @@
         <div>F &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Toggle Fullscreen</div>
         <br>
         <div style="color:#FFD700;font-size:10px;margin-bottom:8px;">💡 TIPS</div>
-        <div>• Swing to gain speed, then jump!</div>
-        <div>• Shoot webs to stun enemies</div>
+        <div>• Shoot webs to defeat rooftop enemies</div>
+        <div>• Jump across rooftops to reach the end</div>
         <div>• Defeat enemies to refill web ammo</div>
-        <div>• Reach the end of each level to win</div>
+        <div>• Clear all obstacles to finish each level</div>
       </div>
       <button class="sw-btn" id="btn-help-close" style="margin-top:24px;width:100%;">CLOSE ✕</button>
     </div>
@@ -696,15 +693,12 @@
       <div id="joy-knob"></div>
     </div>
 
-    <!-- Action Buttons (triangle layout: swing top-left, jump top-right, shoot bottom-right) -->
+    <!-- Action Buttons (Jump & Shoot) -->
     <div id="action-zone">
-      <button class="act-btn" id="tc-jump" aria-label="Jump" style="right: 5px; bottom: 85px;">
+      <button class="act-btn" id="tc-jump" aria-label="Jump" style="right: 80px; bottom: 10px;">
         <div class="act-btn-inner">▲</div>
       </button>
-      <button class="act-btn" id="tc-swing" aria-label="Swing Web" style="right: 80px; bottom: 5px;">
-        <div class="act-btn-inner" style="font-size:22px;">🔗</div>
-      </button>
-      <button class="act-btn" id="tc-shoot" aria-label="Shoot Web" style="right: 5px; bottom: 5px;">
+      <button class="act-btn" id="tc-shoot" aria-label="Shoot Web" style="right: 10px; bottom: 10px;">
         <div class="act-btn-inner">🕸</div>
       </button>
     </div>
@@ -1541,8 +1535,7 @@
         btn.addEventListener('mouseleave',up);
       }
       addActBtn('tc-jump',  38);
-      addActBtn('tc-swing', 32);
-      addActBtn('tc-shoot', 88);
+      addActBtn('tc-shoot', 32);
 
       var pauseBtn = el('tc-pause');
       if (pauseBtn) {

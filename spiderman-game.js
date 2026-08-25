@@ -871,19 +871,6 @@ SpiderMan.prototype.keyup = function(keyCode) {
 		this.shootingFrame = 0;
 	}
 
-	// Release web swing when Space released
-	if (keyCode == KEY.SPACEBAR && this.webState.attached) {
-		this.webState.attached = false;
-		this.addState("FALL");
-		// velocityX/Y are already set by PhysicsEngine in SI px/s
-		// convert to frame-units for the rest of the physics code
-		this.velocityX = this.webState._releaseVX || this.velocityX;
-		this.velocityY = this.webState._releaseVY || this.velocityY;
-	}
-	if (keyCode == KEY.SPACEBAR) {
-		this._spaceWasDown = false; // allow re-attach on next press
-	}
-
 	while (this.keydowns.indexOf(keyCode) > -1) {
 		this.keydowns.splice(this.keydowns.indexOf(keyCode), 1);
 	}
@@ -1001,37 +988,8 @@ SpiderMan.prototype.update = function() {
 		this.addState("RUNNING");
 		this.runningDirection = DIRECTION.LEFT;
 	}
-	if (this.keyIsDown(KEY.X) || (this.keyIsDown(KEY.SPACEBAR) && !this.hasState('FALL') && !this.hasState('JUMP') && !this.webState.attached)) {
+	if (this.keyIsDown(KEY.X) || this.keyIsDown(KEY.SPACEBAR)) {
 		this.addState("SHOOT");
-	}
-	if (this.keyIsDown(KEY.SPACEBAR)) {
-		// Only try to attach once per press (when Space first goes down in air)
-		if (!this._spaceWasDown && !this.webState.attached && this.web > 0 && (this.hasState("FALL") || this.hasState("JUMP"))) {
-			var anchors = [];
-			for (var i = 0; i < this.game.scene.roofs.length; i++) {
-				var r = this.game.scene.roofs[i];
-				anchors.push({ x: r.x, y: r.y });
-				anchors.push({ x: r.x + r.fullWidth / 2, y: r.y });
-				anchors.push({ x: r.x + r.fullWidth, y: r.y });
-			}
-			var dir = (this.runningDirection === -1) ? -1 : 1;
-			this.lastDirX = dir;
-			var playerVelocity = { x: this.velocityX * 60, y: this.velocityY * 60, lastDirX: dir };
-			var bestAnchor = PhysicsEngine.findBestAnchor({ x: this.x, y: this.y }, playerVelocity, anchors);
-			if (bestAnchor) {
-				this.webState.attached = true;
-				this.webState.anchor = bestAnchor;
-				var dx = this.x - bestAnchor.x;
-				var dy = this.y - bestAnchor.y;
-				this.webState.ropeLength = Math.max(150, Math.sqrt(dx * dx + dy * dy));
-				this.webState.theta = Math.atan2(dx, dy);
-				var vt = (this.velocityX * 60) * Math.cos(this.webState.theta) - (this.velocityY * 60) * Math.sin(this.webState.theta);
-				this.webState.angularVelocity = vt / this.webState.ropeLength;
-				this.web--;
-			}
-		}
-		this._spaceWasDown = true;
-		// Detach when space released is handled in keyup
 	}
 
 	if (this.y >= this.canvas.height + 200 || !this.health) {
@@ -1040,31 +998,10 @@ SpiderMan.prototype.update = function() {
 
 	var img = this.stateImage();
 
-	if (this.webState.attached) {
-		// PENDULUM SWING - PhysicsEngine uses SI units (px/s)
-		var dt = 1 / 60;
-		var pumpDir = 0;
-		if (this.keyIsDown(KEY.ARROW_RIGHT) || this.keyIsDown(KEY.D)) pumpDir = 1;
-		if (this.keyIsDown(KEY.ARROW_LEFT)  || this.keyIsDown(KEY.A)) pumpDir = -1;
-		PhysicsEngine.updatePendulumSwing(this, dt, pumpDir);
-		// PhysicsEngine returns velocityX/Y in SI px/s — save for release
-		this.webState._releaseVX = this.velocityX / 60;  // convert to frame-units
-		this.webState._releaseVY = this.velocityY / 60;
-		// Keep internal velocities in frame-scale so collision code works
-		this.velocityX = this.velocityX / 60;
-		this.velocityY = this.velocityY / 60;
-		// Detach if up/W pressed while swinging (launch jump)
-		if (this.keyIsDown(KEY.ARROW_UP) || this.keyIsDown(KEY.W)) {
-			this.webState.attached = false;
-			this.addState("FALL");
-			this._spaceWasDown = false;
-		}
-	} else {
-		// ORIGINAL FRAME-BASED PHYSICS (gravity + position update)
-		this.velocityY += this.gravityForce;
-		this.y += this.velocityY;
-		this.x += this.velocityX;
-	}
+	// Standard physics (gravity + position update)
+	this.velocityY += this.gravityForce;
+	this.y += this.velocityY;
+	this.x += this.velocityX;
 
 	if (this.x - this.game.cameraX < 0) {
 		this.x = this.game.cameraX; // dont allow going left
@@ -1109,8 +1046,8 @@ SpiderMan.prototype.update = function() {
 			this.removeState("FALL");
 			this.webState.attached = false;
 		}
-	} else if (!this.webState.attached) {
-		// In the air but not swinging — add FALL state when moving downward
+	} else {
+		// In the air — add FALL state when moving downward
 		if (this.velocityY > 0) this.addState("FALL");
 	}
 
@@ -1118,35 +1055,6 @@ SpiderMan.prototype.update = function() {
 	var y = this.y;
 	var width = img.width * this.scale;
 	var height = img.height * this.scale;
-
-	// Draw web rope when swinging
-	if (this.webState.attached && this.webState.anchor) {
-		var anchorScreenX = this.webState.anchor.x - this.game.cameraX;
-		var anchorScreenY = this.webState.anchor.y;
-		var playerCenterX = x + width / 2;
-		var playerCenterY = y + height * 0.2; // attach from upper body
-
-		// Draw the rope itself
-		this.ctx.save();
-		this.ctx.beginPath();
-		this.ctx.moveTo(playerCenterX, playerCenterY);
-		this.ctx.lineTo(anchorScreenX, anchorScreenY);
-		this.ctx.strokeStyle = 'rgba(200, 230, 255, 0.85)';
-		this.ctx.lineWidth = 2;
-		this.ctx.setLineDash([6, 3]);
-		this.ctx.stroke();
-		this.ctx.setLineDash([]);
-
-		// Draw anchor grapple point
-		this.ctx.beginPath();
-		this.ctx.arc(anchorScreenX, anchorScreenY, 5, 0, Math.PI * 2);
-		this.ctx.fillStyle = '#00F2FE';
-		this.ctx.fill();
-		this.ctx.strokeStyle = 'white';
-		this.ctx.lineWidth = 1.5;
-		this.ctx.stroke();
-		this.ctx.restore();
-	}
 
 	this.ctx.save();
 	this.drawCharacterSprite(this.ctx, x, y, width, height, img);
