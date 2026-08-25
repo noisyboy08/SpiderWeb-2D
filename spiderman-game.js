@@ -866,10 +866,8 @@ SpiderMan.prototype.keyup = function(keyCode) {
 		this.removeState("RUNNING");
 	}
 
-	if (keyCode == KEY.X) {
+	if (keyCode == KEY.X || keyCode == KEY.SPACEBAR) {
 		this.removeState("SHOOT");
-		// reset the shootingFrame so if user presses space rapidly, it shoots rapidly
-		// but if user holds the space, it shoots every 20 frame
 		this.shootingFrame = 0;
 	}
 
@@ -990,7 +988,7 @@ SpiderMan.prototype.update = function() {
 		this.addState("RUNNING");
 		this.runningDirection = DIRECTION.LEFT;
 	}
-	if (this.keyIsDown(KEY.X)) {
+	if (this.keyIsDown(KEY.X) || (this.keyIsDown(KEY.SPACEBAR) && !this.hasState('FALL') && !this.hasState('JUMP') && !this.webState.attached)) {
 		this.addState("SHOOT");
 	}
 	if (this.keyIsDown(KEY.SPACEBAR)) {

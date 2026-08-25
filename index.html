@@ -514,7 +514,6 @@
       <div class="sw-logo">SPIDER<br>WORLD</div>
       <div class="sw-tagline">Web-Swinging Action Platformer · Jax Steele Returns</div>
       <button class="sw-btn" id="btn-start">▶ START GAME</button>
-      <button class="sw-btn secondary" id="btn-help-title">❓ HOW TO PLAY</button>
       <button class="sw-btn secondary" id="btn-settings-title">⚙ SETTINGS</button>
     </div>
   </div>
@@ -593,6 +592,7 @@
         <span>Music</span>
         <button class="settings-toggle" id="toggle-music" data-key="music"></button>
       </div>
+      <button class="sw-btn" id="btn-settings-how-to-play" style="margin-top:4px;">❓ HOW TO PLAY</button>
       <button class="sw-btn" id="btn-settings-close" style="margin-top:24px;">CLOSE</button>
     </div>
   </div>
@@ -631,8 +631,9 @@
         <div>↑ / W &nbsp;&nbsp; Jump</div>
         <br>
         <div style="color:#00C2FF;font-size:10px;margin-bottom:8px;">🕷️ WEB ACTIONS</div>
-        <div>SPACE &nbsp;&nbsp;&nbsp;&nbsp; Swing Web (in air)</div>
-        <div>X &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Shoot Web at enemies</div>
+        <div>SPACE (ground) — Shoot Web at enemies</div>
+        <div>SPACE (in air) — Swing Web to buildings</div>
+        <div>X key &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Shoot Web (alternate)</div>
         <br>
         <div style="color:#00C2FF;font-size:10px;margin-bottom:8px;">📱 MOBILE CONTROLS</div>
         <div>Left Stick &nbsp; Move Left / Right</div>
@@ -695,15 +696,15 @@
       <div id="joy-knob"></div>
     </div>
 
-    <!-- Action Buttons -->
+    <!-- Action Buttons (triangle layout: swing top-left, jump top-right, shoot bottom-right) -->
     <div id="action-zone">
-      <button class="act-btn" id="tc-jump" aria-label="Jump" style="right: 80px; bottom: 80px;">
+      <button class="act-btn" id="tc-jump" aria-label="Jump" style="right: 5px; bottom: 85px;">
         <div class="act-btn-inner">▲</div>
       </button>
-      <button class="act-btn" id="tc-swing" aria-label="Swing Web" style="right: 150px; bottom: 10px;">
-        <div class="act-btn-inner" style="font-size:24px;">🔗</div>
+      <button class="act-btn" id="tc-swing" aria-label="Swing Web" style="right: 80px; bottom: 5px;">
+        <div class="act-btn-inner" style="font-size:22px;">🔗</div>
       </button>
-      <button class="act-btn" id="tc-shoot" aria-label="Shoot Web" style="right: 10px; bottom: 10px;">
+      <button class="act-btn" id="tc-shoot" aria-label="Shoot Web" style="right: 5px; bottom: 5px;">
         <div class="act-btn-inner">🕸</div>
       </button>
     </div>
@@ -888,9 +889,8 @@
       openSettings('title-screen');
     });
 
-    el('btn-help-title').addEventListener('click', () => {
-      hide('title-screen');
-      openHelp('title-screen');
+    el('btn-settings-how-to-play').addEventListener('click', () => {
+      openHelp('settings-modal');
     });
 
     // ── MISSION TRACKER ─────────────────────────────
@@ -1121,7 +1121,7 @@
       }
 
       el('hud').style.display = 'block';
-      if (el('touch-controls') && (window.innerWidth <= 800 || 'ontouchstart' in window)) el('touch-controls').style.display = 'flex';
+      if (el('touch-controls') && window.matchMedia('(hover: none) and (pointer: coarse)').matches) el('touch-controls').style.display = 'flex';
       updateHpBar(100, 100);
       el('level-progress').textContent = 'DIST: 0m';
     }
@@ -1173,7 +1173,7 @@
       hide('death-overlay');
       window.__swOverlayActive = false;
       el('hud').style.display = 'block';
-      if (el('touch-controls') && (window.innerWidth <= 800 || 'ontouchstart' in window)) el('touch-controls').style.display = 'flex';
+      if (el('touch-controls') && window.matchMedia('(hover: none) and (pointer: coarse)').matches) el('touch-controls').style.display = 'flex';
       if (game) {
         game.gameIsOver = false;
         game.gameoverMenu.style.display = 'none';
