@@ -71,6 +71,8 @@ var KEY = {
 	S: 83,
 	D: 68,
 	W: 87,
+	X: 88,
+	F: 70,
 	ESC: 27,
 };
 
@@ -278,13 +280,11 @@ SpidermanGame.prototype.load = function() {
 		var soundName = AUDIO_LOOP[i];
 		var sound = AUDIO_RESOURCES[soundName];
 		sound.setAttribute("data-name", soundName);
-		sound.ontimeupdate = function() {
-			if (this.currentTime >= this.duration) {
-				var current = AUDIO_LOOP.indexOf(this.getAttribute("data-name"));
-				var next = (current + 1) % (AUDIO_LOOP.length);
-				
-				self.playSound(AUDIO_LOOP[next], false, 0);
-			}
+		sound.onended = function() {
+			var current = AUDIO_LOOP.indexOf(this.getAttribute("data-name"));
+			var next = (current + 1) % (AUDIO_LOOP.length);
+			
+			self.playSound(AUDIO_LOOP[next], false, 0);
 		}
 	}
 
@@ -866,7 +866,7 @@ SpiderMan.prototype.keyup = function(keyCode) {
 		this.removeState("RUNNING");
 	}
 
-	if (keyCode == KEY.SPACEBAR) {
+	if (keyCode == KEY.X) {
 		this.removeState("SHOOT");
 		// reset the shootingFrame so if user presses space rapidly, it shoots rapidly
 		// but if user holds the space, it shoots every 20 frame
@@ -990,8 +990,10 @@ SpiderMan.prototype.update = function() {
 		this.addState("RUNNING");
 		this.runningDirection = DIRECTION.LEFT;
 	}
-	if (this.keyIsDown(KEY.SPACEBAR)) {
+	if (this.keyIsDown(KEY.X)) {
 		this.addState("SHOOT");
+	}
+	if (this.keyIsDown(KEY.SPACEBAR)) {
 		// Try to attach a web anchor when in the air (only once per press)
 		if (!this.webState.attached && this.web > 0 && (this.hasState("FALL") || this.hasState("JUMP"))) {
 			var anchors = [];

@@ -374,7 +374,7 @@
     #joy-zone {
       position: absolute;
       bottom: 20px; left: 20px;
-      width: 160px; height: 160px;
+      width: 100px; height: 100px;
       pointer-events: all;
       touch-action: none;
     }
@@ -395,7 +395,7 @@
     #joy-outer::after  { width: 80%; height: 1px; transform: translate(-50%, -50%); }
     #joy-knob {
       position: absolute;
-      width: 68px; height: 68px;
+      width: 50px; height: 50px;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       border-radius: 50%;
@@ -413,7 +413,7 @@
     #action-zone {
       position: absolute;
       bottom: 20px; right: 20px;
-      width: 200px; height: 160px;
+      width: 250px; height: 160px;
       pointer-events: none;
     }
     .act-btn {
@@ -661,10 +661,13 @@
 
     <!-- Action Buttons -->
     <div id="action-zone">
-      <button class="act-btn" id="tc-jump" aria-label="Jump">
+      <button class="act-btn" id="tc-jump" aria-label="Jump" style="right: 80px; bottom: 80px;">
         <div class="act-btn-inner">▲</div>
       </button>
-      <button class="act-btn" id="tc-shoot" aria-label="Shoot Web">
+      <button class="act-btn" id="tc-swing" aria-label="Swing Web" style="right: 150px; bottom: 10px;">
+        <div class="act-btn-inner" style="font-size:24px;">🔗</div>
+      </button>
+      <button class="act-btn" id="tc-shoot" aria-label="Shoot Web" style="right: 10px; bottom: 10px;">
         <div class="act-btn-inner">🕸</div>
       </button>
     </div>
@@ -1426,7 +1429,7 @@
       // Virtual Joystick
       const joyZone = el('joy-zone');
       const joyKnob = el('joy-knob');
-      const JOY_R = 80, DEAD = 18;
+      const JOY_R = 50, DEAD = 10;
       let joyActive = false, joyLeft = false, joyRight = false;
 
       function joyMove(cx, cy) {
@@ -1471,7 +1474,8 @@
         btn.addEventListener('mouseleave',up);
       }
       addActBtn('tc-jump',  38);
-      addActBtn('tc-shoot', 32);
+      addActBtn('tc-swing', 32);
+      addActBtn('tc-shoot', 88);
 
       var pauseBtn = el('tc-pause');
       if (pauseBtn) {
