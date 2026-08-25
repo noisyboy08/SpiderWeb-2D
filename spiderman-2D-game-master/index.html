@@ -397,6 +397,7 @@
       <div class="sw-logo">SPIDER<br>WORLD</div>
       <div class="sw-tagline">Web-Swinging Action Platformer · Jax Steele Returns</div>
       <button class="sw-btn" id="btn-start">▶ START GAME</button>
+      <button class="sw-btn secondary" id="btn-help-title">❓ HOW TO PLAY</button>
       <button class="sw-btn secondary" id="btn-settings-title">⚙ SETTINGS</button>
     </div>
   </div>
@@ -492,6 +493,28 @@
     </div>
   </div>
 
+  <!-- ──── HELP MODAL ──── -->
+  <div id="help-modal" class="sw-overlay" style="display:none;">
+    <div class="sw-panel" style="max-width:550px;text-align:left;">
+      <h2 style="font-family:'Press Start 2P',monospace;font-size:16px;color:#00C2FF;margin-bottom:24px;text-align:center;">❓ HOW TO PLAY</h2>
+      <div style="font-family:'Press Start 2P',monospace;font-size:10px;line-height:2.0;color:#F5F5F5;margin-bottom:20px;">
+        <p style="color:#FFD700;margin-bottom:10px;">🎮 CONTROLS:</p>
+        <p>- <span style="color:#00C2FF;">SPACEBAR</span>: Jump (Hold for higher jump) / Web Swing</p>
+        <p>- <span style="color:#00C2FF;">LEFT/RIGHT (A/D)</span>: Move / Pump swing momentum</p>
+        <p>- <span style="color:#00C2FF;">X</span>: Fire Web Projectile</p>
+        <p>- <span style="color:#00C2FF;">F</span>: Toggle Fullscreen Mode</p>
+        <p>- <span style="color:#00C2FF;">UP (W)</span>: Reel-in web (Climb up while swinging)</p>
+        <p>- <span style="color:#00C2FF;">DOWN (S)</span>: Web slack (Drop down while swinging)</p>
+        <br>
+        <p style="color:#FFD700;margin-bottom:10px;">🕸️ ADVANCED MOVES:</p>
+        <p>- <span style="color:#FF3D8A;">SpiderGirl Zip</span>: Press <span style="color:#00C2FF;">SHIFT or E</span> to perform a quick mid-air dash.</p>
+        <p>- <span style="color:#FF3D8A;">Swing Strike</span>: Swing directly into an enemy to instantly defeat them for bonus points.</p>
+        <p>- <span style="color:#FF3D8A;">Snap Jump</span>: Release SPACEBAR at the peak of your swing to preserve momentum and soar across gaps.</p>
+      </div>
+      <button class="sw-btn" id="btn-help-close" style="margin-top:10px;width:100%;">CLOSE</button>
+    </div>
+  </div>
+
   <!-- ──── CHEAT CODE MODAL ──── -->
   <div id="cheat-modal" class="sw-overlay" style="display:none; z-index:10000;">
     <div class="sw-panel" style="min-width:400px; text-align:center;">
@@ -524,6 +547,7 @@
       <button class="sw-btn" id="btn-retry">🔄 RETRY</button>
       <button class="sw-btn secondary" id="btn-tracker-from-death">📡 MISSION TRACKER</button>
       <button class="sw-btn secondary" id="btn-cheat-from-death">🔑 CHEAT CODE</button>
+      <button class="sw-btn secondary" id="btn-help-from-death">❓ HOW TO PLAY</button>
       <button class="sw-btn secondary" id="btn-settings-from-death">⚙ SETTINGS</button>
     </div>
   </div>
@@ -666,6 +690,18 @@
       if (settingsCaller) { show(settingsCaller); settingsCaller = null; }
     });
 
+    // ── HELP ───────────────────────────────────────
+    let helpCaller = null;
+    function openHelp(caller) {
+      helpCaller = caller;
+      show('help-modal');
+    }
+
+    el('btn-help-close').addEventListener('click', () => {
+      hide('help-modal');
+      if (helpCaller) { show(helpCaller); helpCaller = null; }
+    });
+
     // ── PHOTO NOTICE ───────────────────────────────
     el('btn-photo-ok').addEventListener('click', () => {
       SAVE.photoDismissed = true;
@@ -688,6 +724,11 @@
     el('btn-settings-title').addEventListener('click', () => {
       hide('title-screen');
       openSettings('title-screen');
+    });
+
+    el('btn-help-title').addEventListener('click', () => {
+      hide('title-screen');
+      openHelp('title-screen');
     });
 
     // ── MISSION TRACKER ─────────────────────────────
@@ -1057,8 +1098,14 @@
 
     window.addEventListener('SPIDERWORLD_SETTINGS', () => {
       hide('death-overlay');
-      window.__swOverlayActive = false;
+      window.__swOverlayActive = true;
       openSettings('death-overlay');
+    });
+
+    window.addEventListener('SPIDERWORLD_HELP', () => {
+      hide('death-overlay');
+      window.__swOverlayActive = true;
+      openHelp('death-overlay');
     });
 
     window.addEventListener('SPIDERWORLD_CHEAT', () => {
@@ -1210,6 +1257,10 @@
 
     el('btn-settings-from-death').addEventListener('click', () => {
       window.dispatchEvent(new CustomEvent('SPIDERWORLD_SETTINGS'));
+    });
+
+    el('btn-help-from-death').addEventListener('click', () => {
+      window.dispatchEvent(new CustomEvent('SPIDERWORLD_HELP'));
     });
 
     el('btn-cheat-tracker').addEventListener('click', () => {

@@ -143,7 +143,7 @@ var KEY = {
 	ARROW_LEFT: 37, ARROW_UP: 38, ARROW_RIGHT: 39, ARROW_DOWN: 40,
 	SPACEBAR: 32, SHIFT: 16,
 	A: 65, S: 83, D: 68, W: 87,
-	E: 69, F: 70, M: 77,
+	E: 69, F: 70, M: 77, Q: 81, X: 88,
 	TAB: 9, ESC: 27,
 };
 var DIRECTION = { RIGHT: 1, LEFT: -1 };
@@ -296,6 +296,14 @@ SpidermanGame.prototype.load = function() {
 		if ((kc == KEY.TAB || kc == KEY.M) && !window.__swOverlayActive && !self.gameIsOver) {
 			e.preventDefault();
 			window.dispatchEvent(new CustomEvent('SPIDERWORLD_TRACKER'));
+		}
+		// F — toggle Fullscreen
+		if (kc == KEY.F) {
+			if (!document.fullscreenElement) {
+				document.documentElement.requestFullscreen().catch(err => {});
+			} else {
+				document.exitFullscreen();
+			}
 		}
 		self.spiderman.keydown(kc);
 	});
@@ -1166,9 +1174,11 @@ SpiderMan.prototype.keyup = function(kc) {
 			this.velocityY *= 0.5;
 		}
 	}
-	if (kc==KEY.SPACEBAR) {
+	if (kc==KEY.X) {
 		this.removeState("SHOOT");
 		this.shootingFrame = 0;
+	}
+	if (kc==KEY.SPACEBAR) {
 		// Release web on spacebar up
 		if (this.webState.attached) {
 			this.webState.attached = false;
@@ -1246,8 +1256,10 @@ SpiderMan.prototype.update = function(dt) {
 	if (this.keyIsDown(KEY.ARROW_LEFT)||this.keyIsDown(KEY.A)) {
 		this.addState("RUNNING"); this.runningDirection = DIRECTION.LEFT;
 	}
-	if (this.keyIsDown(KEY.SPACEBAR)) {
+	if (this.keyIsDown(KEY.X)) {
 		this.addState("SHOOT");
+	}
+	if (this.keyIsDown(KEY.SPACEBAR)) {
 		// Attempt web attach when airborne
 		if (!this.webState.attached && this.web > 0 && (this.hasState("FALL") || this.hasState("JUMP"))) {
 			this._tryAttachWeb();
@@ -1264,7 +1276,7 @@ SpiderMan.prototype.update = function(dt) {
 	}
 
 	// Death check
-	if (this.y >= this.canvas.height || this.health <= 0 || this.web <= 0) {
+	if (this.y >= this.canvas.height + 150 || this.health <= 0 || this.web <= 0) {
 		this.game.gameover();
 	}
 
