@@ -367,7 +367,7 @@
     }
     /* Show only on real touch devices */
     @media (hover: none) and (pointer: coarse) {
-      #touch-controls { display: block; }
+      /* JS handles display when gameplay starts */
     }
 
     /* ── JOYSTICK (left side) ── */
@@ -381,11 +381,9 @@
     #joy-outer {
       position: absolute; inset: 0;
       border-radius: 50%;
-      background: rgba(8, 21, 36, 0.55);
-      border: 2.5px solid rgba(0, 194, 255, 0.45);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      box-shadow: 0 0 24px rgba(0, 194, 255, 0.12), inset 0 0 20px rgba(0, 194, 255, 0.06);
+      background: rgba(8, 21, 36, 0.2);
+      border: 2px solid rgba(0, 194, 255, 0.4);
+      opacity: 0.7;
     }
     /* Crosshair lines inside outer ring */
     #joy-outer::before, #joy-outer::after {
@@ -422,10 +420,8 @@
       position: absolute;
       width: 70px; height: 70px;
       border-radius: 50%;
-      border: 2px solid rgba(0, 194, 255, 0.55);
-      background: rgba(8, 21, 36, 0.6);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      border: 2px solid rgba(0, 194, 255, 0.35);
+      background: rgba(8, 21, 36, 0.3);
       display: flex; align-items: center; justify-content: center;
       pointer-events: all;
       touch-action: manipulation;
@@ -806,6 +802,7 @@
 
     // ── TITLE SCREEN ───────────────────────────────
     function showTitle() {
+      if (el('touch-controls')) el('touch-controls').style.display = 'none';
       hide('mission-tracker'); hide('death-overlay'); hide('news-card');
       show('title-screen');
     }
@@ -837,6 +834,7 @@
         if (game.pauseMenu) game.pauseMenu.style.display = 'none';
       }
 
+      if (el('touch-controls')) el('touch-controls').style.display = 'none';
       el('hud').style.display = 'none';
       buildTrackerNodes();
       updateCharBtn();
@@ -1046,6 +1044,7 @@
       }
 
       el('hud').style.display = 'block';
+      if (el('touch-controls') && (window.innerWidth <= 800 || 'ontouchstart' in window)) el('touch-controls').style.display = 'flex';
       updateHpBar(100, 100);
       el('level-progress').textContent = 'DIST: 0m';
     }
@@ -1088,6 +1087,7 @@
       console.log('[Spiderweb] Gameover event — score:', score);
       window.__swOverlayActive = true;
       el('death-score-val').textContent = score;
+      if (el('touch-controls')) el('touch-controls').style.display = 'none';
       el('hud').style.display = 'none';
       show('death-overlay');
     });
@@ -1096,6 +1096,7 @@
       hide('death-overlay');
       window.__swOverlayActive = false;
       el('hud').style.display = 'block';
+      if (el('touch-controls') && (window.innerWidth <= 800 || 'ontouchstart' in window)) el('touch-controls').style.display = 'flex';
       if (game) {
         game.gameIsOver = false;
         game.gameoverMenu.style.display = 'none';
@@ -1151,6 +1152,7 @@
       // Show news card transition
       const newsIdx = Math.min(id - 1, NEWS_CARDS.length - 1);
       el('news-text').textContent = NEWS_CARDS[newsIdx];
+      if (el('touch-controls')) el('touch-controls').style.display = 'none';
       el('hud').style.display = 'none';
       show('news-card');
     });
