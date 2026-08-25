@@ -551,24 +551,54 @@ SpidermanGame.prototype.update = function() {
 			}
 		}
 
-		// Track world progress (cumulative rightward movement)
-		if (spiderman.velocityX > 0) this.worldProgress += spiderman.velocityX;
+		// Track world progress using camera position (real world pixels scrolled)
+		this.worldProgress = this.cameraX;
 
 		// Update HUD HP bar via custom event
 		window.dispatchEvent(new CustomEvent('SPIDERWORLD_HPUPDATE', {
 			detail: { hp: spiderman.health, maxHp: spiderman.maxHealth }
 		}));
-		// Update HUD distance
+		// Update HUD distance & level progress %
+		var pct = this.levelWorldLength < Infinity
+			? Math.min(100, Math.floor((this.cameraX / this.levelWorldLength) * 100))
+			: null;
 		window.dispatchEvent(new CustomEvent('SPIDERWORLD_PROGRESS', {
-			detail: { dist: Math.floor(this.cameraX / 10) }
+			detail: { dist: Math.floor(this.cameraX / 10), pct: pct }
 		}));
 
-		// Check level completion
+		// Check level completion — draw finish line when close
 		if (!this.levelCompleted && this.worldProgress >= this.levelWorldLength) {
 			this.levelCompleted = true;
 			window.dispatchEvent(new CustomEvent('SPIDERWORLD_LEVELCOMPLETE', {
 				detail: { levelId: this.activeLevelId || 1 }
 			}));
+		}
+
+		// Draw finish line visual when within 800px of end
+		if (this.levelWorldLength < Infinity) {
+			var distToEnd = this.levelWorldLength - this.worldProgress;
+			if (distToEnd > 0 && distToEnd < 800) {
+				var finishX = (this.levelWorldLength - this.cameraX);
+				var pulse = 0.6 + 0.4 * Math.abs(Math.sin(Date.now() / 300));
+				this.ctx.save();
+				this.ctx.globalAlpha = pulse;
+				// Vertical finish line
+				this.ctx.strokeStyle = '#FFD700';
+				this.ctx.lineWidth = 5;
+				this.ctx.setLineDash([20, 10]);
+				this.ctx.beginPath();
+				this.ctx.moveTo(finishX, 0);
+				this.ctx.lineTo(finishX, this.canvas.height);
+				this.ctx.stroke();
+				this.ctx.setLineDash([]);
+				// "FINISH" label
+				this.ctx.globalAlpha = pulse;
+				this.ctx.fillStyle = '#FFD700';
+				this.ctx.font = 'bold 22px SpidermanGamePixelFont, monospace';
+				this.ctx.textAlign = 'center';
+				this.ctx.fillText('FINISH', finishX, 80);
+				this.ctx.restore();
+			}
 		}
 
 		for (var i = 0; i < projectiles.length; i++) {

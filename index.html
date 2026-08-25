@@ -1053,18 +1053,18 @@
 
     // ── START LEVEL ─────────────────────────────────
     const LEVEL_DEFINITIONS_MAP = {
-      1:  { worldLength: 4000,  buildingGapRange: [150, 220], buildingHeightRange: [220, 520] },
-      2:  { worldLength: 4500,  buildingGapRange: [170, 240], buildingHeightRange: [240, 500] },
-      3:  { worldLength: 5000,  buildingGapRange: [160, 230], buildingHeightRange: [220, 530] },
-      4:  { worldLength: 5200,  buildingGapRange: [170, 240], buildingHeightRange: [250, 520] },
-      5:  { worldLength: 5500,  buildingGapRange: [180, 250], buildingHeightRange: [240, 540] },
-      6:  { worldLength: 2500,  buildingGapRange: [100, 150], buildingHeightRange: [300, 450] },
-      7:  { worldLength: 5800,  buildingGapRange: [190, 260], buildingHeightRange: [250, 550] },
-      8:  { worldLength: 6000,  buildingGapRange: [200, 270], buildingHeightRange: [260, 560] },
-      9:  { worldLength: 6200,  buildingGapRange: [200, 280], buildingHeightRange: [250, 570] },
-      10: { worldLength: 2500,  buildingGapRange: [120, 160], buildingHeightRange: [300, 450] },
-      11: { worldLength: 6500,  buildingGapRange: [210, 290], buildingHeightRange: [260, 580] },
-      12: { worldLength: 3000,  buildingGapRange: [100, 150], buildingHeightRange: [320, 460] },
+      1:  { worldLength: 8000,   buildingGapRange: [120, 180], buildingHeightRange: [220, 460] },  // ~1.5 min intro
+      2:  { worldLength: 10000,  buildingGapRange: [140, 200], buildingHeightRange: [230, 490] },  // ~2 min
+      3:  { worldLength: 12000,  buildingGapRange: [150, 210], buildingHeightRange: [240, 510] },  // ~2.5 min
+      4:  { worldLength: 14000,  buildingGapRange: [160, 220], buildingHeightRange: [250, 520] },  // ~3 min
+      5:  { worldLength: 15000,  buildingGapRange: [170, 230], buildingHeightRange: [250, 530] },  // ~3 min
+      6:  { worldLength: 7000,   buildingGapRange: [100, 150], buildingHeightRange: [300, 450] },  // Boss level - shorter
+      7:  { worldLength: 16000,  buildingGapRange: [180, 250], buildingHeightRange: [260, 540] },  // ~3.5 min
+      8:  { worldLength: 18000,  buildingGapRange: [190, 260], buildingHeightRange: [260, 550] },  // ~3.5 min
+      9:  { worldLength: 19000,  buildingGapRange: [200, 270], buildingHeightRange: [270, 560] },  // ~4 min
+      10: { worldLength: 8000,   buildingGapRange: [120, 160], buildingHeightRange: [300, 460] },  // Boss level - shorter
+      11: { worldLength: 20000,  buildingGapRange: [210, 280], buildingHeightRange: [270, 570] },  // ~4 min
+      12: { worldLength: 9000,   buildingGapRange: [100, 150], buildingHeightRange: [320, 480] },  // Final Boss - medium
     };
 
     function startLevel(id) {
@@ -1213,7 +1213,9 @@
     });
 
     window.addEventListener('SPIDERWORLD_PROGRESS', (e) => {
-      el('level-progress').textContent = 'DIST: ' + e.detail.dist + 'm';
+      const { dist, pct } = e.detail;
+      const pctStr = (pct !== null && pct !== undefined) ? ' | ' + pct + '%' : '';
+      el('level-progress').textContent = 'DIST: ' + dist + 'm' + pctStr;
     });
 
     // ── LEVEL COMPLETE ─────────────────────────────────
