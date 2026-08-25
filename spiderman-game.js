@@ -537,13 +537,14 @@ SpidermanGame.prototype.update = function() {
 					this.score += 10;
 					window.dispatchEvent(new CustomEvent('SPIDERWORLD_SCOREUPDATE', { detail: { score: this.score } }));
 				} else {
-					// Normal collision: Player takes damage (if not recently damaged)
-					if (!spiderman.wasDamagedOnPreviousFrame) {
+					// Normal collision: Player takes contact damage (with invincibility window)
+					if (spiderman.invincibilityFrames <= 0) {
 						spiderman.health -= 1;
+						spiderman.invincibilityFrames = 60; // 1 second immunity
 						spiderman.wasDamagedOnPreviousFrame = true;
 						// Knockback
-						spiderman.velocityX = (sx < ex) ? -10 : 10;
-						spiderman.velocityY = -8;
+						spiderman.velocityX = (sx < ex) ? -8 : 8;
+						spiderman.velocityY = -6;
 						spiderman.webState.attached = false;
 						spiderman.addState("FALL");
 					}
@@ -689,27 +690,28 @@ SpidermanGame.prototype.isRoofAtPoint = function(x, y) {
 	return false;
 }
 
-SpidermanGame.prototype.isCharacterAtPoint = function(x, y) {
-	// enemies + spiderman
+SpidermanGame.prototype.isCharacterAtPoint = function(projX, projY) {
+	// enemies + spiderman — all coords are world-space
 	var characters = this.scene.enemies.concat(this.spiderman);
-	x -= this.cameraX;
 
 	for (var i = 0; i < characters.length; i++) {
 		var character = characters[i];
 		var stateImg = character.stateImg || {};
+		if (!stateImg.width) continue;
 
-		var left = character.x - this.cameraX;
-		var top = character.y;
-		var right = left + stateImg.width * character.scale;
-		var bottom = top + stateImg.height * character.scale;
+		// World-space bounds
+		var left   = character.x;
+		var top    = character.y;
+		var right  = left + stateImg.width  * character.scale;
+		var bottom = top  + stateImg.height * character.scale;
 
-		var isCharacter = 
-			   left   <= x // check left bound
-			&& top    <= y // top bound
-			&& right  >= x // right bound
-			&& bottom >= y; // bottom bound
+		var isHit =
+			   projX >= left   // right of left edge
+			&& projX <= right  // left of right edge
+			&& projY >= top    // below top
+			&& projY <= bottom; // above bottom
 
-		if (isCharacter) return character;
+		if (isHit) return character;
 	}
 
 	return false;
@@ -800,6 +802,7 @@ function SpiderMan(game) {
 
 	this.shootingFrame = 0;
 	this.wasDamagedOnPreviousFrame = false;
+	this.invincibilityFrames = 0; // frames of damage immunity after being hit
 }
 
 SpiderMan.prototype.keyIsDown = function(keyCode) {
@@ -945,10 +948,10 @@ SpiderMan.prototype.shoot = function(img) {
 	}
 
 	web.handleHitWithCharacter = function(character) {
-		// somtimes projectile is being hit by the spiderman ON launch
-		// the best way is probably to launch it better but for now, i'll just make sure
-		// it doesn't get destroyed on launch
-		if (character.name != "SPIDER_MAN") return this.remove();
+		// Skip Spiderman — don't destroy the web when hitting own player
+		if (character.name === 'SPIDER_MAN') return;
+		// Hit an enemy — remove the projectile
+		this.remove();
 	}
 
 	web.spiderman = this;
@@ -1093,9 +1096,18 @@ SpiderMan.prototype.update = function() {
 
 	if (this.wasDamagedOnPreviousFrame) {
 		this.wasDamagedOnPreviousFrame = false;
-
-		this.ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+		this.ctx.fillStyle = "rgba(255, 0, 0, 0.35)";
 		this.ctx.fillRect(x, y, width, height);
+	}
+
+	// Invincibility countdown — blink the sprite to show immunity
+	if (this.invincibilityFrames > 0) {
+		this.invincibilityFrames--;
+		// Every 4 frames toggle visibility (blink effect)
+		if (this.invincibilityFrames % 8 < 4) {
+			this.ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+			this.ctx.fillRect(x, y, width, height);
+		}
 	}
 
 	this.regenerate();
@@ -1400,9 +1412,13 @@ Enemy.prototype.remove = function() {
 }
 
 Enemy.prototype.handleHitWithProjectile = function(projectile) {
-	if (projectile.name == "WEB") {
+	if (projectile.name === 'WEB') {
 		this.health -= projectile.damage;
 		this.wasDamagedOnPreviousFrame = true;
+		// If killed by this hit, update score immediately
+		if (this.health <= 0) {
+			window.dispatchEvent(new CustomEvent('SPIDERWORLD_SCOREUPDATE', { detail: { score: this.game.score + 1 } }));
+		}
 	}
 }
 
