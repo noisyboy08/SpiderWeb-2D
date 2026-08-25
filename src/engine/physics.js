@@ -23,27 +23,51 @@ export class PhysicsEngine {
 		return Math.min(Math.max(dt, 0.001), 1 / 30);
 	}
 
-	static findBestAnchor(playerPos, aimWorldPos, anchors, isTouch = false) {
-		const searchRadius = isTouch ? PHYSICS_CONSTANTS.anchorSearchRadiusTouch : PHYSICS_CONSTANTS.anchorSearchRadiusDesktop;
+	static findBestAnchor(playerPos, playerVelocity, anchors) {
 		let bestAnchor = null;
-		let minDistance = Infinity;
+		let maxScore = -Infinity;
+
+		// Calculate player's movement direction (normalized)
+		// If standing still, default to looking slightly up and forward (assuming facing right if 0)
+		let vx = playerVelocity.x;
+		let vy = playerVelocity.y;
+		let speed = Math.sqrt(vx*vx + vy*vy);
+		let dirX = speed > 0 ? vx / speed : 1;
+		let dirY = speed > 0 ? vy / speed : -1;
+
+		// If falling mostly straight down, bias direction forward and up so we can swing out
+		if (dirY > 0.5 && Math.abs(dirX) < 0.5) {
+			dirX = playerVelocity.lastDirX || 1; 
+			dirY = -1;
+		}
 
 		for (const anchor of anchors) {
-			// Distance from aim target
-			const dxAim = anchor.x - aimWorldPos.x;
-			const dyAim = anchor.y - aimWorldPos.y;
-			const distAim = Math.sqrt(dxAim * dxAim + dyAim * dyAim);
+			const dx = anchor.x - playerPos.x;
+			const dy = anchor.y - playerPos.y;
+			const dist = Math.sqrt(dx * dx + dy * dy);
 
-			// Distance from player
-			const dxPlayer = anchor.x - playerPos.x;
-			const dyPlayer = anchor.y - playerPos.y;
-			const distPlayer = Math.sqrt(dxPlayer * dxPlayer + dyPlayer * dyPlayer);
+			// Must be within max web range
+			if (dist > PHYSICS_CONSTANTS.maxWebRange) continue;
+			
+			// Must be ABOVE the player to swing (dy is negative when anchor is above player)
+			if (dy > -20) continue; 
 
-			if (distAim <= searchRadius && distPlayer <= PHYSICS_CONSTANTS.maxWebRange) {
-				if (distAim < minDistance) {
-					minDistance = distAim;
-					bestAnchor = anchor;
-				}
+			// Normalize direction to anchor
+			const normX = dx / dist;
+			const normY = dy / dist;
+
+			// Dot product to see how well it aligns with our current velocity/intent
+			const dot = (normX * dirX) + (normY * dirY);
+
+			// Score: Heavily weight alignment (dot product) and slight preference for being a bit further away (better swing arcs)
+			let score = (dot * 100) + (dist * 0.1);
+
+			// Penalty if the anchor is almost directly overhead (makes for a boring straight up/down swing)
+			if (Math.abs(dx) < 30) score -= 50;
+
+			if (score > maxScore) {
+				maxScore = score;
+				bestAnchor = anchor;
 			}
 		}
 

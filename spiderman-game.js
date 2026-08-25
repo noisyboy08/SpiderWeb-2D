@@ -513,6 +513,44 @@ SpidermanGame.prototype.update = function() {
 
 		spiderman.update();
 
+		// Epic 2: Spiderman vs Enemy Collision (Swing-Strike Combat)
+		var enemies = this.scene.enemies;
+		for (var i = enemies.length - 1; i >= 0; i--) {
+			var enemy = enemies[i];
+			var ex = enemy.x, ey = enemy.y;
+			var ew = enemy.stateImg ? enemy.stateImg.width * enemy.scale : 40;
+			var eh = enemy.stateImg ? enemy.stateImg.height * enemy.scale : 64;
+
+			var sx = spiderman.x, sy = spiderman.y;
+			var sw = 40, sh = 64; // Spiderman approx bounds
+
+			// Simple AABB collision
+			if (sx < ex + ew && sx + sw > ex && sy < ey + eh && sy + sh > ey) {
+				// We have a collision!
+				var speedPxPerFrame = Math.sqrt(spiderman.velocityX * spiderman.velocityX + spiderman.velocityY * spiderman.velocityY);
+				// Speed threshold (600 px/s is approx 10 px/frame)
+				if (spiderman.webState.attached && speedPxPerFrame > 9.5) {
+					// Swing-Strike: Enemy dies, player bounces slightly and maintains momentum
+					enemy.health = 0;
+					// Add a little upward bounce (feels good)
+					spiderman.velocityY -= 5;
+					this.score += 10;
+					window.dispatchEvent(new CustomEvent('SPIDERWORLD_SCOREUPDATE', { detail: { score: this.score } }));
+				} else {
+					// Normal collision: Player takes damage (if not recently damaged)
+					if (!spiderman.wasDamagedOnPreviousFrame) {
+						spiderman.health -= 1;
+						spiderman.wasDamagedOnPreviousFrame = true;
+						// Knockback
+						spiderman.velocityX = (sx < ex) ? -10 : 10;
+						spiderman.velocityY = -8;
+						spiderman.webState.attached = false;
+						spiderman.addState("FALL");
+					}
+				}
+			}
+		}
+
 		// Track world progress (cumulative rightward movement)
 		if (spiderman.velocityX > 0) this.worldProgress += spiderman.velocityX;
 
@@ -702,8 +740,11 @@ function SpiderMan(game) {
 	this.states = ["STANDING"];
 	this.scale = 0.5;
 	this.keydowns = [];
-	this.health = 5;
-	this.maxHealth = 5;
+	
+	// Epic 3: SpiderGirl Modifiers
+	this.isSpiderGirl = game.isSpiderGirl;
+	this.maxHealth = this.isSpiderGirl ? 4 : 5;
+	this.health = this.maxHealth;
 
 	this.web = 100;
 	this.webState = { anchor: null, ropeLength: 0, theta: 0, angularVelocity: 0, attached: false };
@@ -962,8 +1003,10 @@ SpiderMan.prototype.update = function() {
 				anchors.push({ x: r.x + r.fullWidth, y: r.y });
 			}
 			var dir = (this.runningDirection === -1) ? -1 : 1;
-			var aimWorldPos = { x: this.x + dir * 300, y: this.y - 250 };
-			var bestAnchor = PhysicsEngine.findBestAnchor({ x: this.x, y: this.y }, aimWorldPos, anchors, false);
+			// Store last direction for physics engine if standing still
+			this.lastDirX = dir; 
+			var playerVelocity = { x: this.velocityX * 60, y: this.velocityY * 60, lastDirX: dir };
+			var bestAnchor = PhysicsEngine.findBestAnchor({ x: this.x, y: this.y }, playerVelocity, anchors);
 			if (bestAnchor) {
 				this.webState.attached = true;
 				this.webState.anchor = bestAnchor;
