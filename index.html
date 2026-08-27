@@ -1469,6 +1469,11 @@
       });
 
       document.addEventListener('keydown', (e) => {
+        // Prevent browser default behavior (page scroll) for game control keys
+        const GAME_KEYS = [32, 37, 38, 39, 40, 16, 87, 65, 83, 68, 88, 69];
+        if (GAME_KEYS.indexOf(e.keyCode || e.which) > -1 && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+        }
         if ((e.key === 'f' || e.key === 'F') && e.target.tagName !== 'INPUT') {
           toggleFullscreen();
         }

@@ -288,6 +288,17 @@ SpidermanGame.prototype.load = function() {
 
 	document.addEventListener("keydown", function(e) {
 		var kc = e.keyCode || e.which;
+		// Prevent browser default for all game control keys:
+		// Spacebar (web shoot), arrow keys (move/aim), Shift (swing), S/A/D/W/X/E (game actions)
+		var GAME_KEYS = [
+			KEY.SPACEBAR,
+			KEY.ARROW_UP, KEY.ARROW_DOWN, KEY.ARROW_LEFT, KEY.ARROW_RIGHT,
+			KEY.SHIFT, KEY.X, KEY.E,
+			KEY.W, KEY.A, KEY.S, KEY.D
+		];
+		if (GAME_KEYS.indexOf(kc) > -1 && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+			e.preventDefault();
+		}
 		if (kc == KEY.ESC && !self.escapeKey) {
 			self.escapeKey = true;
 			if (self.paused) self.unpause(); else self.pause();
