@@ -46,13 +46,14 @@ export class SpiderwebGame {
 	}
 
 	openSettings() {
-		alert(`Spiderweb Settings:\n- Reduce Flash: ${saveManager.data.settings.reduceFlash ? 'ON' : 'OFF'}\n- Reduce Shake: ${saveManager.data.settings.reduceShake ? 'ON' : 'OFF'}\n- Sound Effects: ${saveManager.data.settings.soundEffects ? 'ON' : 'OFF'}`);
+		// BUG1-FIX: Dispatch the proper SPIDERWORLD_SETTINGS event so the styled
+		// Settings modal in index.html opens — no more plain browser alert().
+		window.dispatchEvent(new CustomEvent('SPIDERWORLD_SETTINGS'));
 	}
 }
 
-// Auto-start Spiderweb Game instance on page load
-window.addEventListener('DOMContentLoaded', () => {
-	const spiderweb = new SpiderwebGame();
-	window.spiderwebEngine = spiderweb;
-	spiderweb.start();
-});
+// SUGGESTION16-FIX: Do NOT auto-start here. index.html is the single entry point
+// that boots SpidermanGame directly. Having both auto-start causes TWO game
+// instances, duplicate event listeners, and conflicting state.
+// The SpiderwebGame class above is exported for future modular use.
+// window.addEventListener('DOMContentLoaded', ...) intentionally removed.

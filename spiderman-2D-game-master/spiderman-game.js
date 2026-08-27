@@ -93,6 +93,11 @@ function sfxWebFail()        { synthSFX('square', 90, 45, 0.08, 0.18); }
 function sfxLand()           { synthSFX('sine', 200, 80, 0.1, 0.22); }
 
 // ─────────────────────────────────────────────────────────────
+//  DEBUG FLAGS
+// ─────────────────────────────────────────────────────────────
+var DEBUG_HITBOXES = false;  // set true in devtools to see boss/attack hitboxes
+
+// ─────────────────────────────────────────────────────────────
 //  PHYSICS CONSTANTS (Section 5.7)
 // ─────────────────────────────────────────────────────────────
 var PHYSICS = {
@@ -499,6 +504,9 @@ SpidermanGame.prototype.update = function() {
 		window.dispatchEvent(new CustomEvent('SPIDERWORLD_PROGRESS', {
 			detail: { dist: Math.floor(spider.x) }
 		}));
+		window.dispatchEvent(new CustomEvent('SPIDERWORLD_WEBUPDATE', {
+			detail: { web: spider.web, maxWeb: spider.maxWeb }
+		}));
 
 		// Level complete check (non-boss levels)
 		if (!this.levelCompleted && !this.activeBoss) {
@@ -525,12 +533,20 @@ SpidermanGame.prototype.update = function() {
 		this.showPauseMenu();
 	}
 
-	// Score display
-	this.ctx.fillStyle = "white";
-	this.ctx.font = "20px SpidermanGamePixelFont, Monospace, Helvetica";
-	this.ctx.textAlign = "center";
+	// Score display — top-right (avoids overlapping boss health bar at top-center)
+	this.ctx.fillStyle = "rgba(255,215,0,0.9)";
+	this.ctx.font = "bold 14px SpidermanGamePixelFont, Monospace, Helvetica";
+	this.ctx.textAlign = "right";
 	this.ctx.textBaseline = "top";
-	this.ctx.fillText(this.score, this.canvas.width/2, 10);
+	this.ctx.fillText('SCORE: ' + this.score, this.canvas.width - 16, 36);
+
+	// Checkpoint flash overlay
+	if (this._checkpointFlashAlpha > 0) {
+		this.ctx.fillStyle = 'rgba(0,255,120,' + this._checkpointFlashAlpha.toFixed(2) + ')';
+		this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+		this._checkpointFlashAlpha -= dt * 1.8;
+		if (this._checkpointFlashAlpha < 0) this._checkpointFlashAlpha = 0;
+	}
 
 	// ── Vignette — always the very last draw call ────────────────
 	var _vg = this.ctx.createRadialGradient(
@@ -570,6 +586,7 @@ SpidermanGame.prototype.checkSwingStrike = function(spider, dt) {
 
 	for (var i = enemies.length-1; i >= 0; i--) {
 		var e = enemies[i];
+		// BUG5-FIX: compare in world-space (not screen-space)
 		var ew = e.w || 40, eh = e.h || 64;
 		if (spX < e.x + ew && spX + sw > e.x && spY < e.y + eh && spY + sh > e.y) {
 			if (spider.webState && spider.webState.attached && speed > PHYSICS.swingStrikeSpeed) {
@@ -608,20 +625,13 @@ SpidermanGame.prototype.checkCheckpoints = function(spider) {
 			this.checkpointsPassed.push(cps[i]);
 			this.lastCheckpointX = cps[i];
 			sfxCheckpoint();
-			// Visual flash
-			this.showCheckpointFlash();
+			// SUGGESTION5-FIX: Real canvas green flash + HUD notification
+			this._checkpointFlashAlpha = 0.35;
+			window.dispatchEvent(new CustomEvent('SPIDERWORLD_CHECKPOINT', {
+				detail: { x: cps[i] }
+			}));
 		}
 	}
-};
-
-SpidermanGame.prototype.showCheckpointFlash = function() {
-	var ctx = this.ctx;
-	var alpha = 0.4;
-	var id = setInterval(function() {
-		// flash handled by canvas overlay — short green tint
-		alpha -= 0.08;
-		if (alpha <= 0) clearInterval(id);
-	}, 50);
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -638,11 +648,11 @@ SpidermanGame.prototype.updateBoss = function(spider, dt) {
 			name: this.activeBoss.name
 		}
 	}));
-	// Check if boss hit player
+	// BUG2-FIX: Boss hitbox stored in WORLD-SPACE, so compare directly to spider world-space coords
 	if (this.activeBoss.attackHitbox) {
-		var h = this.activeBoss.attackHitbox;
-		var sp = spider;
-		if (sp.x < h.x+h.w && sp.x+36 > h.x && sp.y < h.y+h.h && sp.y+60 > h.y) {
+		var h = this.activeBoss.attackHitbox;  // h.x is world-space
+		var sp = spider;                        // sp.x is world-space
+		if (sp.x < h.x + h.w && sp.x + 36 > h.x && sp.y < h.y + h.h && sp.y + 60 > h.y) {
 			if (!sp.invincibleFrames || sp.invincibleFrames <= 0) {
 				sp.takeDamage(this.activeBoss.attackDamage || 20);
 				sfxHitImpact();
@@ -650,13 +660,13 @@ SpidermanGame.prototype.updateBoss = function(spider, dt) {
 			}
 		}
 	}
-	// Check if player's swing-strike hits boss
+	// Check if player's swing-strike hits boss — compare in world-space
 	var vx = spider.velocityX, vy = spider.velocityY;
 	var speed = Math.sqrt(vx*vx + vy*vy) * 60;
 	if (spider.webState && spider.webState.attached && speed > PHYSICS.swingStrikeSpeed) {
 		var b = this.activeBoss;
-		var drawX = b.x - this.cameraX;
-		if (spider.x - this.cameraX > drawX - 20 && spider.x - this.cameraX < drawX + b.w + 20 &&
+		// BUG2-FIX: compare boss.x (world) to spider.x (world) directly
+		if (spider.x > b.x - 20 && spider.x < b.x + b.w + 20 &&
 			spider.y > b.y - 20 && spider.y < b.y + b.h + 20) {
 			if (!b.isInvulnerable && !b._hitCooldown) {
 				b.takeDamage(spider.isSpiderGirl ? 8 : 10);
@@ -687,8 +697,13 @@ SpidermanGame.prototype.initHazards = function() {
 			this.hazards.push({ type: 'fire', x: f + Math.random()*300, w: 120 + Math.random()*80, timer: 0 });
 		}
 	}
-	// Crumbling roofs — flagged on Roof creation
+	// BUG6-FIX: Crumbling roofs — create actual hazard objects at intervals
 	this.hasCrumblingRoofs = hz.indexOf('crumbling_roofs') !== -1;
+	if (this.hasCrumblingRoofs) {
+		for (var cr = 800; cr < wl; cr += 1000) {
+			this.hazards.push({ type: 'crumble', x: cr + Math.random()*200, w: 160, crumbleTimer: 0, crumbling: false, fallen: false });
+		}
+	}
 
 	// Moving cranes
 	if (hz.indexOf('moving_cranes') !== -1) {
@@ -794,6 +809,26 @@ SpidermanGame.prototype.updateHazardEffects = function(spider, dt) {
 	var hz = this.hazards;
 	for (var i = 0; i < hz.length; i++) {
 		var h = hz[i];
+		// BUG6-FIX: Crumbling roofs — player stands on them → they crumble after 0.8s
+		if (h.type === 'crumble') {
+			if (h.fallen) continue;
+			var crX = h.x, crW = h.w;
+			var onCrumble = (spider.x + 18 > crX && spider.x < crX + crW &&
+				spider.y + 62 > 620 && spider.y < 680 && spider.velocityY >= 0);
+			if (onCrumble) {
+				h.crumbling = true;
+				h.crumbleTimer += dt;
+				if (h.crumbleTimer > 0.8) {
+					h.fallen = true;  // tile drops away
+					spider.addState('FALL');
+					if (spider.webState) spider.webState.attached = false;
+					sfxHitImpact();
+					this.addShake(6);
+				}
+			} else {
+				if (!h.fallen) { h.crumbling = false; h.crumbleTimer = 0; }
+			}
+		}
 		if (h.type === 'fire') {
 			// Damage if player stands on fire zone
 			if (spider.x > h.x - 20 && spider.x < h.x + h.w + 20 &&
@@ -957,15 +992,16 @@ SpidermanGame.prototype.isRoofAtPoint = function(x, y) {
 	return false;
 };
 SpidermanGame.prototype.isCharacterAtPoint = function(x, y) {
-	var chars = this.scene.enemies.concat(this.spiderman);
-	x -= this.cameraX;
+	// BUG5-FIX: x is already in WORLD-SPACE (projectile.x). Compare to character world-space x directly.
+	// Do NOT subtract cameraX from x here — the characters' .x is also world-space.
+	var chars = this.scene.enemies.concat(this.spiderman ? [this.spiderman] : []);
 	for (var i = 0; i < chars.length; i++) {
 		var c = chars[i];
 		var img = c.stateImg || {};
-		var l = c.x - this.cameraX;
+		var l = c.x;   // world-space left edge
 		var t = c.y;
-		var ri = l + (img.width || 40) * c.scale;
-		var b  = t + (img.height || 64) * c.scale;
+		var ri = l + (img.width || 40) * (c.scale || 1);
+		var b  = t + (img.height || 64) * (c.scale || 1);
 		if (l <= x && t <= y && ri >= x && b >= y) return c;
 	}
 	return false;
@@ -985,13 +1021,15 @@ SpidermanGame.prototype.restart = function() {
 	}
 	this.worldProgress = 0;
 	this.levelCompleted = false;
+	// BUG7-FIX: Do NOT reset activeBoss here — it is set by _applyLevelConfig BEFORE restart()
+	// Only reset bossDefeated flag
 	this.bossDefeated = false;
-	this.activeBoss = null;
 	this.lastCheckpointX = 0;
 	this.checkpointsPassed = [];
 	this.hazards = [];
 	this.windForce = 0;
 	this.shakeAmount = 0;
+	this._checkpointFlashAlpha = 0;
 
 	// Init hazards
 	this.initHazards();
@@ -1078,7 +1116,10 @@ function SpiderMan(game) {
 	this.maxHealth = this.isSpiderGirl ? 80 : 100;
 	this.health = this.maxHealth;
 
+	// BUG3-FIX: Web meter with max + recharge. Gate web attach when empty.
 	this.web = 100;
+	this.maxWeb = 100;
+	this.webRechargeTimer = 0;   // recharge 1 web per 0.5s when not swinging
 	this.webState = { anchor: null, ropeLength: 0, theta: 0, angularVelocity: 0, attached: false };
 
 	this.velocityX = 0;
@@ -1091,7 +1132,7 @@ function SpiderMan(game) {
 	this.runningShootingFrames = ["SHOOT_RIGHT-STEP","SHOOT_CHANGE_STEP","SHOOT_LEFT-STEP","SHOOT_CHANGE_STEP"];
 	this.runningFrame = 0;
 
-	this.gravityForce = 0.7;
+	// SUGGESTION3-FIX: Removed legacy gravityForce=0.7 (frame-based). Physics handled by PHYSICS.freeFallGravity (dt-based).
 	this.runningDirection = DIRECTION.RIGHT;
 	var speedMult = (game && game.speedMultiplier) ? game.speedMultiplier : 1.0;
 	this.runningSpeed = 5 * speedMult * (this.isSpiderGirl ? 1.2 : 1.0);
@@ -1099,6 +1140,9 @@ function SpiderMan(game) {
 	this.shootingFrame = 0;
 	this.wasDamagedOnPreviousFrame = false;
 	this.invincibleFrames = 0;
+
+	// SUGGESTION8: Flawless detection — reset per level start
+	this.tookDamageThisLevel = false;
 
 	// SpiderGirl web-zip dash
 	this.webZipCooldown = 0;
@@ -1131,6 +1175,8 @@ SpiderMan.prototype.takeDamage = function(amount) {
 	this.health -= amount;
 	this.wasDamagedOnPreviousFrame = true;
 	this.invincibleFrames = 60;  // ~1 second invincibility
+	// SUGGESTION8-FIX: Track that player took damage for Flawless detection
+	this.tookDamageThisLevel = true;
 	window.dispatchEvent(new CustomEvent('SPIDERWORLD_PLAYERDAMAGED'));
 };
 
@@ -1286,9 +1332,18 @@ SpiderMan.prototype.update = function(dt) {
 		sfxWebZip();
 	}
 
-	// Death check
-	if (this.y >= this.canvas.height + 150 || this.health <= 0 || this.web <= 0) {
+	// Death check — fall off screen or health depleted (NOT web-empty)
+	if (this.y >= this.canvas.height + 150 || this.health <= 0) {
 		this.game.gameover();
+	}
+
+	// BUG3-FIX: Web recharge — recharge 1 web every 0.5s when not swinging
+	if (!this.webState.attached && this.web < this.maxWeb) {
+		this.webRechargeTimer += dt;
+		if (this.webRechargeTimer >= 0.5) {
+			this.web = Math.min(this.maxWeb, this.web + 1);
+			this.webRechargeTimer = 0;
+		}
 	}
 
 	var img = this.stateImage();
@@ -1297,7 +1352,8 @@ SpiderMan.prototype.update = function(dt) {
 	if (this.webState.attached) {
 		this._updatePendulum(dt);
 	} else {
-		this.velocityY += this.gravityForce;
+		// SUGGESTION3-FIX: Use dt-based PHYSICS.freeFallGravity, not legacy frame-based gravityForce
+		this.velocityY += PHYSICS.freeFallGravity * dt / 60; // scale to legacy frame-units
 		this.velocityY = Math.min(this.velocityY, 23);  // terminal velocity (frame-based)
 		this.y += this.velocityY;
 		this.x += this.velocityX;
@@ -1420,6 +1476,9 @@ SpiderMan.prototype.update = function(dt) {
 };
 
 SpiderMan.prototype._tryAttachWeb = function() {
+	// BUG3-FIX: Block web attachment when out of web
+	if (this.web <= 0) { sfxWebFail(); return; }
+
 	var anchors = [];
 	var roofs = this.game.scene.roofs;
 	for (var i = 0; i < roofs.length; i++) {
@@ -1428,9 +1487,7 @@ SpiderMan.prototype._tryAttachWeb = function() {
 		anchors.push({ x: r.x + r.fullWidth/2, y: r.y });
 		anchors.push({ x: r.x + r.fullWidth,   y: r.y });
 	}
-	// Also add building corners from hazards (cranes etc.)
 
-	var dir = this.runningDirection || 1;
 	var vxPxS = this.velocityX * 60, vyPxS = this.velocityY * 60;
 	var best = findBestAnchor(this.x, this.y, vxPxS, vyPxS, anchors);
 	if (best) {
@@ -1443,7 +1500,8 @@ SpiderMan.prototype._tryAttachWeb = function() {
 		this.webState.theta = Math.atan2(dx, dy);
 		var vt = vxPxS * Math.cos(this.webState.theta) - vyPxS * Math.sin(this.webState.theta);
 		this.webState.angularVelocity = vt / rope;
-		this.web--;
+		this.web = Math.max(0, this.web - 1);
+		this.webRechargeTimer = 0;  // reset recharge delay when web used
 	} else {
 		// Open sky web fail
 		sfxWebFail();
@@ -1508,13 +1566,28 @@ SpiderMan.prototype.drawHealthbar = function() {
 };
 
 SpiderMan.prototype.drawWebbar = function() {
-	var img = this.game.resources.WEB_PROJECTILE;
-	var str = "WEB: " + this.web;
-	this.ctx.fillStyle = "white";
-	this.ctx.font = "12px SpidermanGamePixelFont, Monospace, Arial";
-	this.ctx.textAlign = "right";
-	this.ctx.textBaseline = "top";
-	this.ctx.fillText(str, this.canvas.width - 16, 16);
+	// SUGGESTION4-FIX: Draw web as a recharge bar, not a counter number
+	var ctx = this.ctx;
+	var barW = 100, barH = 8;
+	var x = this.canvas.width - 16 - barW, y = 16;
+	var pct = Math.max(0, Math.min(1, this.web / this.maxWeb));
+	var barColor = pct > 0.3 ? '#00F2FE' : '#FF6B35';
+	ctx.fillStyle = 'rgba(0,0,0,0.5)';
+	ctx.fillRect(x, y, barW, barH);
+	ctx.fillStyle = barColor;
+	ctx.fillRect(x, y, barW * pct, barH);
+	ctx.strokeStyle = '#00F2FE';
+	ctx.lineWidth = 1;
+	ctx.strokeRect(x, y, barW, barH);
+	ctx.fillStyle = '#aef';
+	ctx.font = '9px monospace';
+	ctx.textAlign = 'right';
+	ctx.textBaseline = 'top';
+	ctx.fillText('WEB', x - 4, y);
+	// BUG3-FIX: Recharge web meter when not swinging
+	if (!this.webState.attached && this.web < this.maxWeb) {
+		// recharge happens in update() loop now — just display
+	}
 };
 
 SpiderMan.prototype.drawCharacterSprite = function(ctx, x, y, w, h, img) {
@@ -1841,7 +1914,6 @@ Drone.prototype.update = function(dt) {
 };
 
 Drone.prototype.shootDrone = function() {
-	var self = this;
 	var p = new Projectile(this.game);
 	p.name = "DRONE_SHOT"; p.damage = 10;
 	p.x = this.x; p.y = this.y + this.h/2;
@@ -1849,15 +1921,17 @@ Drone.prototype.shootDrone = function() {
 	var vx = target ? (target.x - this.x) * 0.3 : -60;
 	var vy = target ? (target.y - this.y) * 0.3 : 0;
 	var spd = Math.sqrt(vx*vx+vy*vy) || 1;
-	var nx = vx/spd * 120, ny = vy/spd * 120;
-	p.update = function() {
+	// BUG4-FIX: Store px/s velocity — update() uses real dt, not hardcoded 1/60
+	var nvx = vx/spd * 120, nvy = vy/spd * 120;
+	p.update = function(dt) {
+		dt = dt || (1/60);
 		var rx = this.x - this.game.cameraX;
 		this.ctx.fillStyle = '#FF8C00';
 		this.ctx.beginPath();
 		this.ctx.arc(rx, this.y, 6, 0, Math.PI*2);
 		this.ctx.fill();
-		this.x += nx * (1/60);
-		this.y += ny * (1/60);
+		this.x += nvx * dt;  // BUG4-FIX: real dt
+		this.y += nvy * dt;  // BUG4-FIX: real dt
 		if (this.x < this.game.cameraX-200 || this.x > this.game.cameraX+1480) this.remove();
 	};
 	p.handleHitWithCharacter = function(c) {
@@ -2014,13 +2088,15 @@ Sniper.prototype.fireSniper = function(spider) {
 	var tx = spider.x + 15, ty = spider.y + 30;
 	var dx = tx - p.x, dy = ty - p.y;
 	var spd = Math.sqrt(dx*dx+dy*dy) || 1;
-	var nx = dx/spd * 500, ny = dy/spd * 500;
-	p.update = function() {
+	// BUG4-FIX: Store px/s velocity — update() uses real dt
+	var nvx = dx/spd * 500, nvy = dy/spd * 500;
+	p.update = function(dt) {
+		dt = dt || (1/60);
 		var rx = this.x - this.game.cameraX;
 		this.ctx.fillStyle = '#FFD700';
 		this.ctx.fillRect(rx-3, this.y-1, 10, 3);
-		this.x += nx * (1/60);
-		this.y += ny * (1/60);
+		this.x += nvx * dt;  // BUG4-FIX: real dt
+		this.y += nvy * dt;  // BUG4-FIX: real dt
 		if (this.x < this.game.cameraX-200 || this.x > this.game.cameraX+1480 ||
 			this.y < -100 || this.y > this.canvas.height+100) this.remove();
 	};
@@ -2338,8 +2414,8 @@ BossEntity.prototype._draw = function(ctx, cameraX) {
 		ctx.fillText('!', drawX + this.w/2, this.y - 17);
 	}
 
-	// Attack hitbox visualization (debug/feedback)
-	if (this.attackHitbox) {
+	// SUGGESTION2-FIX: Attack hitbox visualization gated behind DEBUG_HITBOXES flag
+	if (DEBUG_HITBOXES && this.attackHitbox) {
 		var h = this.attackHitbox;
 		ctx.fillStyle = 'rgba(255,0,0,0.2)';
 		ctx.fillRect(h.x - cameraX, h.y, h.w, h.h);

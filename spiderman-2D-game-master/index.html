@@ -564,6 +564,23 @@
     </div>
     <div id="level-progress">DIST: 0m</div>
     <button id="fs-btn" title="Toggle Fullscreen (F)">⛶ FS</button>
+    <!-- INCOMPLETE5-FIX: Checkpoint toast -->
+    <div id="checkpoint-toast" style="display:none;position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(0,255,120,0.9);color:#030810;font-family:'Press Start 2P',monospace;font-size:11px;padding:8px 20px;border-radius:8px;z-index:9500;pointer-events:none;">&#10003; CHECKPOINT SAVED</div>
+  </div>
+
+  <!-- INCOMPLETE5-FIX: Mobile touch controls — hidden on desktop via CSS media query -->
+  <div id="touch-controls" style="display:none;position:fixed;bottom:0;left:0;right:0;height:140px;z-index:8500;pointer-events:none;">
+    <!-- Left joystick -->
+    <div id="joy-zone" style="pointer-events:all;position:absolute;bottom:20px;left:20px;width:100px;height:100px;background:rgba(0,194,255,0.12);border:2px solid rgba(0,194,255,0.4);border-radius:50%;touch-action:none;">
+      <div id="joy-knob" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px;background:rgba(0,194,255,0.7);border-radius:50%;"></div>
+    </div>
+    <!-- Right action buttons -->
+    <div style="pointer-events:all;position:absolute;bottom:20px;right:20px;display:flex;gap:12px;align-items:flex-end;">
+      <button id="btn-touch-jump" style="width:60px;height:60px;border-radius:50%;background:rgba(0,194,255,0.25);border:2px solid rgba(0,194,255,0.6);color:#00C2FF;font-size:10px;font-family:monospace;touch-action:none;user-select:none;">JUMP</button>
+      <button id="btn-touch-web" style="width:80px;height:80px;border-radius:50%;background:rgba(0,194,255,0.35);border:2px solid #00C2FF;color:#fff;font-size:10px;font-family:monospace;touch-action:none;user-select:none;font-weight:bold;">WEB
+SHOOT</button>
+      <button id="btn-touch-shoot" style="width:60px;height:60px;border-radius:50%;background:rgba(255,61,138,0.25);border:2px solid rgba(255,61,138,0.6);color:#FF3D8A;font-size:10px;font-family:monospace;touch-action:none;user-select:none;">SHOOT</button>
+    </div>
   </div>
 
   <!-- ──── CANVAS ──── -->
@@ -769,7 +786,13 @@
     }
 
     el('btn-char-toggle').addEventListener('click', () => {
-      if (!SAVE.spiderGirlUnlocked) { alert('SpiderGirl unlocks after defeating Stinger in Level 12!'); return; }
+      if (!SAVE.spiderGirlUnlocked) {
+        // INCOMPLETE3-FIX: Use styled notification instead of alert()
+        const btn = el('btn-char-toggle');
+        btn.textContent = '🔒 BEAT LVL 12!';
+        setTimeout(() => updateCharBtn(), 2000);
+        return;
+      }
       SAVE.selectedChar = SAVE.selectedChar === 'spidergirl' ? 'jax' : 'spidergirl';
       writeSave(SAVE);
       updateCharBtn();
@@ -1036,8 +1059,9 @@
 
       window.__swOverlayActive = true;
       el('hud').style.display = 'none';
-      // If level 12 completed, trigger SpiderGirl unlock
-      if (id === 12 && SAVE.spiderGirlUnlocked) {
+      // INCOMPLETE3-FIX: If level 12 completed, show SpiderGirl unlock whether or not
+      // it was previously unlocked (first time completing triggers the reveal)
+      if (id === 12) {
         hide('level-complete');
         showSpiderGirlUnlock();
         return;
@@ -1242,6 +1266,19 @@
       updateHpBar(hp, maxHp);
     }, 500);
 
+    // SUGGESTION5-FIX: Checkpoint toast notification
+    window.addEventListener('SPIDERWORLD_CHECKPOINT', () => {
+      const toast = el('checkpoint-toast');
+      if (!toast) return;
+      toast.style.display = 'block';
+      toast.style.opacity = '1';
+      clearTimeout(toast._hideTimer);
+      toast._hideTimer = setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => { toast.style.display = 'none'; toast.style.opacity = '1'; }, 500);
+      }, 2000);
+    });
+
     // ── DEATH OVERLAY BUTTONS (delegate to events for consistency) ────────────
     el('btn-retry').addEventListener('click', () => {
       window.dispatchEvent(new CustomEvent('SPIDERWORLD_RETRY'));
@@ -1384,11 +1421,92 @@
       const fsBtn = el('fs-btn');
       if (fsBtn) fsBtn.addEventListener('click', toggleFullscreen);
 
+      // INCOMPLETE5-FIX: Mobile touch controls — show on touch devices
+      if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+        const tc = el('touch-controls');
+        if (tc) tc.style.display = 'block';
+        initTouchControls();
+      }
+
       if (!SAVE.photoDismissed) {
         show('photo-notice');
       } else {
         showTitle();
       }
+    }
+
+    // INCOMPLETE5-FIX: Mobile touch controls wiring
+    function initTouchControls() {
+      // Joystick
+      const joyZone = el('joy-zone');
+      const joyKnob = el('joy-knob');
+      if (!joyZone || !joyKnob) return;
+
+      let joyActive = false;
+      let joyId = null;
+      const JOY_RADIUS = 40;
+
+      function getJoyRect() { return joyZone.getBoundingClientRect(); }
+
+      joyZone.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const t = e.changedTouches[0];
+        joyActive = true; joyId = t.identifier;
+        updateJoy(t);
+      }, { passive: false });
+
+      document.addEventListener('touchmove', (e) => {
+        if (!joyActive) return;
+        for (const t of e.changedTouches) {
+          if (t.identifier === joyId) { updateJoy(t); break; }
+        }
+      }, { passive: false });
+
+      document.addEventListener('touchend', (e) => {
+        for (const t of e.changedTouches) {
+          if (t.identifier === joyId) {
+            joyActive = false;
+            joyKnob.style.transform = 'translate(-50%,-50%)';
+            // Release direction keys
+            if (game && game.spiderman) {
+              game.spiderman.keyup(39); // right
+              game.spiderman.keyup(37); // left
+            }
+          }
+        }
+      });
+
+      function updateJoy(touch) {
+        const r = getJoyRect();
+        const cx = r.left + r.width/2, cy = r.top + r.height/2;
+        let dx = touch.clientX - cx, dy = touch.clientY - cy;
+        const dist = Math.sqrt(dx*dx+dy*dy);
+        if (dist > JOY_RADIUS) { dx = dx/dist*JOY_RADIUS; dy = dy/dist*JOY_RADIUS; }
+        joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+        if (game && game.spiderman) {
+          if (dx > 10) { game.spiderman.keydown(39); game.spiderman.keyup(37); game.spiderman.runningDirection = 1; }
+          else if (dx < -10) { game.spiderman.keydown(37); game.spiderman.keyup(39); game.spiderman.runningDirection = -1; }
+          else { game.spiderman.keyup(39); game.spiderman.keyup(37); }
+        }
+      }
+
+      // Action buttons
+      function bindTouchBtn(id, keyCode) {
+        const btn = el(id);
+        if (!btn) return;
+        btn.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          if (game && game.spiderman) game.spiderman.keydown(keyCode);
+        }, { passive: false });
+        btn.addEventListener('touchend', (e) => {
+          e.preventDefault();
+          if (game && game.spiderman) game.spiderman.keyup(keyCode);
+        }, { passive: false });
+      }
+
+      bindTouchBtn('btn-touch-jump', 38);  // UP arrow → jump
+      bindTouchBtn('btn-touch-web', 32);   // SPACEBAR → web swing
+      bindTouchBtn('btn-touch-shoot', 88); // X → shoot web
     }
 
     // Wait for DOM to be fully loaded
